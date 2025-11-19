@@ -7,7 +7,7 @@ import (
 )
 
 // renderTemplate junta o layout base com o template específico
-func renderTemplate(w http.ResponseWriter, tmplName string, data interface{}) {
+func RenderTemplate(w http.ResponseWriter, tmplName string, data any) {
 	// Caminhos dos arquivos
 	layoutPath := filepath.Join("templates", "layouts", "base.html")
 	templatePath := filepath.Join("templates", tmplName)

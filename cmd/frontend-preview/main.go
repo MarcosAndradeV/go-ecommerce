@@ -5,12 +5,8 @@ import (
 	"html/template"
 	"log"
 	"net/http"
-	"path/filepath"
-	"time"
 
-	// Importe seus models reais para garantir que o template funcione
-	// Troque "github.com/seu-usuario/go-ecommerce" pelo nome que está no seu go.mod
-	"github.com/<user_name>/go-ecommerce/internal/models" 
+	"github.com/MarcosAndradeV/go-ecommerce/internal/models" 
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 

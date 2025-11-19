@@ -1,36 +1,30 @@
 {{define "content"}}
+<header class="mb-10 border-b border-gray-200 pb-6">
+  <h1 class="text-3xl font-light text-gray-700 mb-2">Catálogo</h1>
+  <p class="text-gray-500">Lista de itens disponíveis</p>
+</header>
 
-<div class="text-center mb-12">
-    <h1 class="text-3xl font-bold text-gray-900">Catálogo de Produtos</h1>
-    <p class="text-gray-600 mt-2">Confira nossas últimas novidades e ofertas.</p>
-</div>
-
-<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+  
+  {{range .}}
+  <a href="/product/{{.ID.Hex}}" class="group bg-white p-6 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 ease-in-out flex flex-col border border-gray-100">
     
-    {{range .}}
-    <div class="bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-lg transition-shadow duration-300 overflow-hidden flex flex-col">
-        
-        <div class="h-48 w-full bg-gray-100 flex items-center justify-center overflow-hidden">
-            <img src="{{.ImageURL}}" alt="{{.Name}}" class="object-cover h-full w-full">
-        </div>
-
-        <div class="p-5 flex flex-col flex-grow">
-            <h2 class="text-lg font-semibold text-gray-800 mb-2">{{.Name}}</h2>
-            
-            <div class="mt-auto">
-                <p class="text-xl font-bold text-blue-700 mb-4">{{.FormattedPrice}}</p>
-                
-                <a href="/product/{{.ID.Hex}}" class="block w-full text-center bg-blue-600 text-white font-medium py-2 px-4 rounded hover:bg-blue-700 transition-colors">
-                    Ver Detalhes
-                </a>
-            </div>
-        </div>
+    <div class="aspect-square bg-gray-50 rounded mb-4 flex items-center justify-center overflow-hidden">
+      <img src="{{.ImageURL}}" alt="{{.Name}}" class="object-cover h-full w-full group-hover:scale-105 transition-transform duration-300">
     </div>
-    {{else}}
-        <div class="col-span-full text-center py-10">
-            <p class="text-gray-500 text-lg">Nenhum produto disponível no momento.</p>
-        </div>
-    {{end}}
+
+    <h2 class="text-lg font-medium text-gray-800 mb-1 group-hover:text-blue-600 transition">{{.Name}}</h2>
+    <p class="text-xl font-bold text-gray-600">{{.FormattedPrice}}</p>
+    
+    <div class="mt-4 text-sm text-blue-600 font-medium opacity-0 group-hover:opacity-100 transition-opacity">
+      Visualizar item
+    </div>
+  </a>
+  {{else}}
+    <div class="col-span-full text-center py-12 bg-white rounded-lg shadow-sm border border-gray-200">
+      <p class="text-gray-400 text-lg">Nenhum registro encontrado.</p>
+    </div>
+  {{end}}
 
 </div>
 {{end}}

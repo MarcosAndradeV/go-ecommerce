@@ -1,34 +1,35 @@
 {{define "base"}}
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Loja Virtual</title>
-    <link href="/static/css/output.css" rel="stylesheet">
-</head>
-<body class="bg-gray-50 text-gray-900 flex flex-col min-h-screen">
-
-    <nav class="bg-slate-800 text-white shadow-lg">
-        <div class="container mx-auto px-6 py-4 flex justify-between items-center">
-            <a href="/" class="text-2xl font-bold tracking-wide hover:text-gray-300">
-                E-Commerce
-            </a>
-            <div class="space-x-6 font-medium">
-                <a href="/" class="hover:text-gray-300 transition">Produtos</a>
-                <a href="/admin" class="hover:text-gray-300 transition">Admin</a>
-            </div>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-gray-100 text-gray-800 font-sans antialiased min-h-screen flex flex-col">
+    
+    <nav class="bg-white shadow-sm mb-8">
+      <div class="container mx-auto max-w-5xl px-6 py-4 flex justify-between items-center">
+        <a href="/" class="text-xl font-semibold text-gray-700 hover:text-blue-600 transition">
+          Loja Virtual
+        </a>
+        
+        <div class="space-x-6 text-sm font-medium text-gray-500">
+          <a href="/" class="hover:text-blue-600 transition">Produtos</a>
+          <a href="/admin" class="hover:text-blue-600 transition">Administração</a>
         </div>
+      </div>
     </nav>
 
-    <main class="flex-grow container mx-auto px-6 py-8">
-        {{template "content" .}}
+    <main class="container mx-auto max-w-5xl px-6 flex-grow">
+      {{template "content" .}}
     </main>
 
-    <footer class="bg-slate-900 text-gray-400 text-center py-6 mt-auto">
-        <p>&copy; 2025 Loja Virtual. Todos os direitos reservados.</p>
+    <footer class="mt-12 py-8 text-center text-gray-400 text-sm border-t border-gray-200">
+      &copy; 2025 Sistema de Vendas.
     </footer>
 
-</body>
+  </body>
 </html>
 {{end}}

@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/MarcosAndradeV/go-ecommerce/internal/database"
+	"github.com/MarcosAndradeV/go-ecommerce/internal/handlers"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/joho/godotenv"
@@ -32,7 +33,7 @@ func main() {
 	r.Handle("/static/*", http.StripPrefix("/static", fileServer))
 
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("Servidor Go E-commerce Rodando! 🚀"))
+		handlers.RenderTemplate(w, "../templates/index.html", nil)
 	})
 
 	port := os.Getenv("PORT")
