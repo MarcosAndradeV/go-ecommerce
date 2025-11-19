@@ -9,8 +9,9 @@ import (
 
 // MongoStore implements the Storage interface for MongoDB
 type MongoStore struct {
-	client *mongo.Client
 	dbName string
+	client *mongo.Client
+	DB *mongo.Database
 }
 
 // NewMongoStore creates a new MongoStore
@@ -21,7 +22,7 @@ func NewMongoStore(dbName string) *MongoStore {
 }
 
 // Connect connects to a MongoDB instance
-func (s *MongoStore) Connect(uri string) error {
+func (s *MongoStore) Connect(ctx context.Context, uri string) error {
 	clientOptions := options.Client().ApplyURI(uri)
 	client, err := mongo.Connect(context.TODO(), clientOptions)
 	if err != nil {
@@ -29,18 +30,19 @@ func (s *MongoStore) Connect(uri string) error {
 	}
 
 	// Ping the primary
-	if err := client.Ping(context.TODO(), nil); err != nil {
+	if err := client.Ping(ctx, nil); err != nil {
 		return err
 	}
-
 	s.client = client
+	s.DB = s.client.Database(s.dbName)
+
 	return nil
 }
 
 // Disconnect disconnects from the MongoDB instance
-func (s *MongoStore) Disconnect() error {
+func (s *MongoStore) Disconnect(ctx context.Context) error {
 	if s.client == nil {
 		return nil
 	}
-	return s.client.Disconnect(context.TODO())
+	return s.client.Disconnect(ctx)
 }

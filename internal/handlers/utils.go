@@ -6,22 +6,40 @@ import (
 	"path/filepath"
 )
 
-// renderTemplate junta o layout base com o template específico
-func RenderTemplate(w http.ResponseWriter, tmplName string, data any) {
-	// Caminhos dos arquivos
-	layoutPath := filepath.Join("templates", "layouts", "base.html")
-	templatePath := filepath.Join("templates", tmplName)
+// O envelope que vai para o HTML
+type PageData struct {
+	IsAdmin bool
+	Data    interface{}
+	Error   string // Opcional, para mensagens de erro
+}
 
-	// Parse dos arquivos
-	tmpl, err := template.ParseFiles(layoutPath, templatePath)
+// Verifica se o cookie de admin existe
+func CheckAuth(r *http.Request) bool {
+	_, err := r.Cookie("sessao_admin")
+	return err == nil
+}
+
+// Renderiza juntando base.html + arquivo da página
+func renderTemplate(w http.ResponseWriter, r *http.Request, tmplName string, data interface{}) {
+	isAdmin := CheckAuth(r)
+
+	pageData := PageData{
+		IsAdmin: isAdmin,
+		Data:    data,
+	}
+
+
+	layout := filepath.Join("templates", "layouts", "base.html")
+	view := filepath.Join("templates", tmplName)
+
+	tmpl, err := template.ParseFiles(layout, view)
 	if err != nil {
-		http.Error(w, "Erro interno no servidor (Template): "+err.Error(), http.StatusInternalServerError)
+		http.Error(w, "Erro interno (Template): "+err.Error(), 500)
 		return
 	}
 
-	// Executa o template "base" (definido no base.html), passando os dados
-	err = tmpl.ExecuteTemplate(w, "base", data)
+	err = tmpl.ExecuteTemplate(w, "base", pageData)
 	if err != nil {
-		http.Error(w, "Erro ao renderizar página: "+err.Error(), http.StatusInternalServerError)
+		http.Error(w, "Erro renderização: "+err.Error(), 500)
 	}
 }
