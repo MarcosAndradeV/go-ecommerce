@@ -1,0 +1,52 @@
+{{define "content"}}
+
+<div class="max-w-5xl mx-auto bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden mt-8">
+    <div class="md:flex">
+        
+        <div class="md:w-1/2 h-64 md:h-auto bg-gray-100 flex items-center justify-center p-4">
+            <img class="max-h-full max-w-full object-contain rounded" src="{{.ImageURL}}" alt="{{.Name}}">
+        </div>
+        
+        <div class="p-8 md:w-1/2 flex flex-col justify-center">
+            <div class="text-sm text-blue-600 font-bold uppercase tracking-wider mb-1">Detalhes</div>
+            <h1 class="text-3xl font-bold text-gray-900 leading-tight mb-4">{{.Name}}</h1>
+            
+            <p class="text-gray-600 leading-relaxed mb-8">{{.Description}}</p>
+            
+            <div class="flex items-center justify-between mb-8 border-t border-b border-gray-100 py-4">
+                <span class="text-3xl font-bold text-gray-900">{{.FormattedPrice}}</span>
+                
+                {{if gt .Stock 0}}
+                    <span class="px-3 py-1 text-green-800 bg-green-100 rounded-full text-sm font-medium">
+                        Disponível
+                    </span>
+                {{else}}
+                    <span class="px-3 py-1 text-red-800 bg-red-100 rounded-full text-sm font-medium">
+                        Esgotado
+                    </span>
+                {{end}}
+            </div>
+
+            <div>
+                {{if gt .Stock 0}}
+                <form action="/checkout" method="GET">
+                    <input type="hidden" name="product_id" value="{{.ID.Hex}}">
+                    <button type="submit" class="w-full bg-blue-600 text-white font-bold py-4 rounded hover:bg-blue-700 transition shadow-md">
+                        Comprar Agora
+                    </button>
+                </form>
+                {{else}}
+                <button disabled class="w-full bg-gray-300 text-gray-500 font-bold py-4 rounded cursor-not-allowed">
+                    Produto Indisponível
+                </button>
+                {{end}}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="mt-8 text-center">
+    <a href="/" class="text-blue-600 hover:text-blue-800 font-medium">Voltar para a lista</a>
+</div>
+
+{{end}}
