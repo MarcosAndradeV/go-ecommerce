@@ -1,27 +1,24 @@
 {{define "content"}}
-<div class="flex items-center justify-center min-h-[50vh]">
-    <div class="bg-white p-10 rounded-xl shadow-sm border border-gray-200 text-center max-w-lg">
-        
-        <div class="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6">
-            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
-            </svg>
+<div class="flex items-center justify-center min-h-[60vh]">
+    <div class="bg-white p-10 rounded-xl shadow-sm border border-gray-200 text-center max-w-md w-full">
+
+        {{if .Data.IsPix}}
+            <div class="mt-6 pt-6 border-t border-gray-100">
+                <p class="text-xs font-bold text-blue-500 uppercase mb-2">Ambiente de Demonstração</p>
+                <form action="/purchase/simulate/{{.Data.Order.ID.Hex}}" method="POST">
+                    <button type="submit" class="w-full bg-blue-100 hover:bg-blue-200 text-blue-700 font-bold py-3 rounded-lg transition flex items-center justify-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                        </svg>
+                        Simular Pagamento no App
+                    </button>
+                </form>
+                <p class="text-xs text-gray-400 mt-2">Clique para simular o callback do banco.</p>
+            </div>
+
+        {{else}}
+            {{end}}
+
         </div>
-        
-        <h1 class="text-2xl font-bold text-gray-900 mb-2">Pedido Confirmado!</h1>
-        <p class="text-gray-500 mb-8 leading-relaxed">
-            Obrigado pela sua compra. Seu pedido foi registrado com sucesso e já estamos preparando tudo.
-        </p>
-        
-        <div class="space-y-3">
-            <a href="/" class="block w-full bg-blue-600 text-white font-bold py-3 rounded hover:bg-blue-700 transition">
-                Continuar Comprando
-            </a>
-            
-            <a href="/dashboard" class="block w-full text-blue-600 font-medium py-2 hover:underline">
-                Ver meus pedidos
-            </a>
-        </div>
-    </div>
 </div>
 {{end}}

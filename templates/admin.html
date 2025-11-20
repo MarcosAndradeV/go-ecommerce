@@ -1,87 +1,157 @@
 {{define "content"}}
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-
   <div class="lg:col-span-1">
-    <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200 sticky top-24">
-      <h2 class="text-lg font-bold text-gray-800 mb-6 pb-4 border-b border-gray-100">
+    <div
+      class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 sticky top-24"
+    >
+      <h2
+        class="text-lg font-bold text-gray-800 mb-6 pb-4 border-b border-gray-100"
+      >
         Novo Produto
       </h2>
 
       <form action="/admin/create" method="POST" class="space-y-4">
+        <div>
+          <label class="block text-xs font-bold text-gray-500 uppercase mb-1"
+            >Nome</label
+          >
+          <input
+            type="text"
+            name="name"
+            required
+            class="w-full bg-white border border-gray-300 rounded-lg px-3 py-2.5 focus:outline-none focus:border-blue-500 transition"
+          />
+        </div>
+        <div class="grid grid-cols-2 gap-4">
           <div>
-              <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Nome do Produto</label>
-              <input type="text" name="name" required class="w-full bg-white border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500 transition">
-          </div>
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Preço (10,90)</label>
-                <input type="text" name="price" required placeholder="0,00" class="w-full bg-white border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500 transition">
-            </div>
-            <div>
-                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Estoque</label>
-                <input type="number" name="stock" required placeholder="0" class="w-full bg-white border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500 transition">
-            </div>
+            <label class="block text-xs font-bold text-gray-500 uppercase mb-1"
+              >Preço</label
+            >
+            <input
+              type="text"
+              name="price"
+              required
+              placeholder="0.00"
+              class="w-full bg-white border border-gray-300 rounded-lg px-3 py-2.5 focus:outline-none focus:border-blue-500 transition"
+            />
           </div>
           <div>
-              <label class="block text-xs font-bold text-gray-500 uppercase mb-1">URL da Imagem</label>
-              <input type="text" name="image_url" required class="w-full bg-white border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500 transition">
+            <label class="block text-xs font-bold text-gray-500 uppercase mb-1"
+              >Estoque</label
+            >
+            <input
+              type="number"
+              name="stock"
+              required
+              placeholder="0"
+              class="w-full bg-white border border-gray-300 rounded-lg px-3 py-2.5 focus:outline-none focus:border-blue-500 transition"
+            />
           </div>
-          <div>
-              <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Descrição</label>
-              <textarea name="description" rows="3" class="w-full bg-white border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500 transition"></textarea>
-          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-gray-500 uppercase mb-1"
+            >URL da Imagem</label
+          >
+          <input
+            type="text"
+            name="image_url"
+            required
+            class="w-full bg-white border border-gray-300 rounded-lg px-3 py-2.5 focus:outline-none focus:border-blue-500 transition"
+          />
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-gray-500 uppercase mb-1"
+            >Tamanhos (separados por vírgula)</label
+          >
+          <input
+            type="text"
+            name="sizes"
+            placeholder="P, M, G, GG"
+            class="w-full bg-white border border-gray-300 rounded-lg px-3 py-2.5 focus:outline-none focus:border-blue-500 transition"
+          />
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-gray-500 uppercase mb-1"
+            >Descrição</label
+          >
+          <textarea
+            name="description"
+            rows="3"
+            class="w-full bg-white border border-gray-300 rounded-lg px-3 py-2.5 focus:outline-none focus:border-blue-500 transition"
+          ></textarea>
+        </div>
 
-          <button type="submit" class="w-full bg-gray-800 text-white font-bold py-2.5 rounded hover:bg-black transition shadow-sm">
-            Salvar Produto
-          </button>
+        <button
+          type="submit"
+          class="w-full bg-gray-900 text-white font-bold py-3 rounded-lg hover:bg-black transition shadow-sm"
+        >
+          Adicionar Produto
+        </button>
       </form>
     </div>
   </div>
 
   <div class="lg:col-span-2">
-    <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-      <div class="px-6 py-4 border-b border-gray-200 bg-gray-50 flex justify-between items-center">
-        <h3 class="font-bold text-gray-700">Inventário Atual</h3>
-        <span class="text-xs bg-white border px-2 py-1 rounded text-gray-500">Visualização</span>
+    <div
+      class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden"
+    >
+      <div
+        class="px-6 py-4 border-b border-gray-200 bg-gray-50 flex justify-between items-center"
+      >
+        <h3 class="font-bold text-gray-700">Inventário</h3>
       </div>
 
       <table class="w-full text-left text-sm text-gray-600">
-        <thead class="bg-gray-50 text-xs uppercase font-medium text-gray-500">
+        <thead
+          class="bg-gray-50 text-xs uppercase font-medium text-gray-500 border-b border-gray-100"
+        >
           <tr>
-            <th class="px-6 py-3">Item</th>
-            <th class="px-6 py-3">Valor</th>
+            <th class="px-6 py-3">Produto</th>
+            <th class="px-6 py-3">Preço</th>
             <th class="px-6 py-3 text-center">Estoque</th>
             <th class="px-6 py-3 text-right">Ações</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-gray-100">
-          {{range .Data}}
-          <tr class="hover:bg-gray-50 transition">
-            <td class="px-6 py-4 font-medium text-gray-800 flex items-center gap-3">
-                <img src="{{.ImageURL}}" class="w-8 h-8 rounded object-cover border border-gray-200">
-                {{.Name}}
+          {{range .Data.Products}}
+          <tr class="hover:bg-gray-50 transition group">
+            <td
+              class="px-6 py-4 font-medium text-gray-800 flex items-center gap-3"
+            >
+              <div
+                class="h-10 w-10 rounded bg-gray-100 border border-gray-200 overflow-hidden"
+              >
+                <img src="{{.ImageURL}}" class="w-full h-full object-cover" />
+              </div>
+              {{.Name}}
             </td>
             <td class="px-6 py-4">{{.FormattedPrice}}</td>
             <td class="px-6 py-4 text-center">
-                {{if gt .Stock 0}}
-                    <span class="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-bold">{{.Stock}}</span>
-                {{else}}
-                    <span class="bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs font-bold">0</span>
-                {{end}}
+              {{if gt .Stock 0}}
+              <span
+                class="bg-green-100 text-green-700 px-2.5 py-0.5 rounded-full text-xs font-bold border border-green-200"
+                >{{.Stock}}</span
+              >
+              {{else}}
+              <span
+                class="bg-red-100 text-red-700 px-2.5 py-0.5 rounded-full text-xs font-bold border border-red-200"
+                >Esgotado</span
+              >
+              {{end}}
             </td>
             <td class="px-6 py-4 text-right">
-                <a href="edit/product/{{.ID.Hex}}" class="text-blue-600 hover:underline text-xs">Editar</a>
+              <a
+                href="edit/product/{{.ID.Hex}}"
+                class="text-blue-600 hover:text-blue-800 font-medium text-xs bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded transition"
+              >
+                Editar
+              </a>
             </td>
-          </tr>
-          {{else}}
-          <tr>
-              <td colspan="4" class="px-6 py-8 text-center text-gray-400">Nenhum produto cadastrado.</td>
           </tr>
           {{end}}
         </tbody>
       </table>
     </div>
   </div>
-
 </div>
 {{end}}

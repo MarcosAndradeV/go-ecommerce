@@ -1,22 +1,46 @@
 {{define "content"}}
 <div class="max-w-5xl mx-auto">
-    
 
-    <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+    <div class="flex items-center justify-between mb-6">
+        <h1 class="text-2xl font-bold text-gray-800">Minha Conta</h1>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden mb-6">
+        <div class="px-6 py-6 flex items-center gap-6">
+            <div class="flex-shrink-0">
+                <div class="w-16 h-16 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 text-white" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/>
+                    </svg>
+                </div>
+            </div>
+            <div class="flex-grow">
+                <h2 class="text-xl font-bold text-gray-900 mb-1">Olá,  {{.Data.User.Name}}</h2>
+                <p class="text-gray-600 text-sm flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                        <polyline points="22,6 12,13 2,6"/>
+                    </svg>
+                    {{.Data.User.Email}}
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
         <div class="px-6 py-4 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
             <h2 class="font-semibold text-gray-700">Histórico de Pedidos</h2>
-            <span class="text-xs text-gray-400 bg-white px-2 py-1 border rounded">Atualizado agora</span>
         </div>
 
         {{if .Data.Orders}}
         <div class="overflow-x-auto">
             <table class="w-full text-left text-sm text-gray-600">
-                <thead class="bg-gray-50 text-xs uppercase font-medium text-gray-400 border-b border-gray-100">
+                <thead class="bg-gray-50 text-xs uppercase font-medium text-gray-500 border-b border-gray-100">
                     <tr>
                         <th class="px-6 py-3">Data</th>
-                        <th class="px-6 py-3">Status</th>
-                        <th class="px-6 py-3">Resumo do Pedido</th>
-                        <th class="px-6 py-3 text-right">Valor Total</th>
+                        <th class="px-6 py-3">Estado</th>
+                        <th class="px-6 py-3">Resumo</th>
+                        <th class="px-6 py-3 text-right">Total</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-100">
@@ -26,15 +50,15 @@
                             {{.CreatedAt.Format "02/01/2006"}}
                         </td>
                         <td class="px-6 py-4">
-                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-200">
                                 {{.Status}}
                             </span>
                         </td>
                         <td class="px-6 py-4">
                             <ul class="space-y-1">
                                 {{range .Items}}
-                                <li class="text-gray-700">
-                                    <span class="font-bold text-xs text-gray-400">{{.Quantity}}x</span> {{.ProductName}}
+                                <li class="text-gray-700 text-xs">
+                                    <span class="font-bold">{{.Quantity}}x</span> {{.ProductName}}
                                 </li>
                                 {{end}}
                             </ul>
@@ -49,8 +73,7 @@
         </div>
         {{else}}
             <div class="p-12 text-center">
-                <div class="text-gray-300 text-5xl mb-4">🛍️</div>
-                <p class="text-gray-500 text-lg mb-4">Você ainda não realizou nenhuma compra.</p>
+                <p class="text-gray-500 text-lg mb-4">Ainda não realizou nenhuma compra.</p>
                 <a href="/" class="text-blue-600 font-medium hover:underline">Ir para o catálogo</a>
             </div>
         {{end}}

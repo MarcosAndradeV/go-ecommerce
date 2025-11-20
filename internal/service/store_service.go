@@ -22,7 +22,7 @@ func NewStoreService(repo *repository.StoreRepository, payment *PaymentService) 
 	}
 }
 
-func (s *StoreService) CreateProduct(name, desc, img string, price int64, stock int) error {
+func (s *StoreService) CreateProduct(name, desc, img string, price int64, stock int, sizes []string) error {
 	product := models.Product{
 		ID:          primitive.NewObjectID(),
 		Name:        name,
@@ -30,13 +30,14 @@ func (s *StoreService) CreateProduct(name, desc, img string, price int64, stock 
 		ImageURL:    img,
 		Price:       price,
 		Stock:       stock,
+		Sizes:       sizes,
 		CreatedAt:   time.Now(),
 	}
 	// Assumindo que seu Repo tem CreateProduct (se não, adicione no store_repository)
 	return s.Repo.CreateProduct(product)
 }
 
-func (s *StoreService) EditProduct(ID primitive.ObjectID, name, desc, img string, price int64, stock int) error {
+func (s *StoreService) EditProduct(ID primitive.ObjectID, name, desc, img string, price int64, stock int, sizes []string) error {
 	product := models.Product{
 		ID:          primitive.NewObjectID(),
 		Name:        name,
@@ -44,6 +45,7 @@ func (s *StoreService) EditProduct(ID primitive.ObjectID, name, desc, img string
 		ImageURL:    img,
 		Price:       price,
 		Stock:       stock,
+		Sizes:       sizes,
 		CreatedAt:   time.Now(),
 	}
 	return s.Repo.EditProduct(ID, product)
@@ -61,46 +63,151 @@ func (s *StoreService) GetProductDetails(idStr string) (*models.Product, error) 
 	return s.Repo.GetProductByID(objID)
 }
 
-func (s *StoreService) ProcessPurchase(productIDStr, customerName, customerEmail, cardNum, cardCVV string) error {
-	objID, _ := primitive.ObjectIDFromHex(productIDStr)
+	func (s *StoreService) ProcessCartPurchase(userIDStr, customerName, customerEmail, customerAddress, paymentMethod, cardNum, cardCVV string, selectedItems []string) (*models.Order, string, string, error) {
+	userID, _ := primitive.ObjectIDFromHex(userIDStr)
 
-	// 1. Buscar Produto e Validar Estoque
-	product, err := s.Repo.GetProductByID(objID)
-	if err != nil || product.Stock <= 0 {
-		return errors.New("produto indisponível ou não encontrado")
-	}
-
-	// 2. PROCESSAR PAGAMENTO (Antes de mexer no estoque)
-	// Se falhar aqui, retornamos o erro e nada acontece no banco
-	err = s.Payment.ProcessPayment(cardNum, customerName, cardCVV, product.Price)
+	// 1. Buscar Carrinho
+	user, err := s.Repo.GetUserWithCart(userID)
 	if err != nil {
-		return err // Ex: "transação recusada"
+		return nil, "", "", err
 	}
 
-	// 3. Baixar Estoque (Só chega aqui se pagou)
-	err = s.Repo.DecrementStock(objID)
-	if err != nil {
-		// Num cenário real, aqui faríamos o estorno do pagamento (Reverse)
-		return errors.New("erro ao atualizar estoque, compra cancelada")
+	// 2. Filtrar itens e Calcular Total
+	var itemsToBuy []models.OrderItem
+	var total int64 = 0
+
+	for _, item := range user.Cart {
+		shouldBuy := false
+		for _, selID := range selectedItems {
+			if item.ProductID.Hex() == selID {
+				shouldBuy = true
+				break
+			}
+		}
+		if shouldBuy {
+			product, err := s.Repo.GetProductByID(item.ProductID)
+			if err != nil || product.Stock < item.Quantity {
+				return nil, "", "", errors.New("produto " + item.ProductName + " sem estoque")
+			}
+			itemsToBuy = append(itemsToBuy, item)
+			total += item.Price * int64(item.Quantity)
+		}
 	}
 
-	// 4. Gerar Pedido
+	if len(itemsToBuy) == 0 {
+		return nil, "", "", errors.New("nenhum item selecionado")
+	}
+
+	// 3. PROCESSAR PAGAMENTO
+	status := "PAGO"
+	var pixCode, qrCodeImg string
+
+	if paymentMethod == "pix" {
+		status = "AGUARDANDO_PAGAMENTO"
+		// Gera o PIX
+		code, img, err := s.Payment.GeneratePix(total)
+		if err != nil {
+			return nil, "", "", err
+		}
+		pixCode = code
+		qrCodeImg = img
+	} else {
+		// Processa Cartão (usa o método renomeado ou antigo)
+		err = s.Payment.ProcessPaymentCard(cardNum, customerName, cardCVV, total)
+		if err != nil {
+			return nil, "", "", err
+		}
+	}
+
+	// 4. Baixar Estoque e Remover do Carrinho
+	for _, item := range itemsToBuy {
+		for i := 0; i < item.Quantity; i++ {
+			s.Repo.DecrementStock(item.ProductID)
+		}
+		s.Repo.RemoveItemFromCart(userID, item.ProductID, item.Size)
+	}
+
+	// 5. Gerar Pedido
 	order := models.Order{
-		ID:            primitive.NewObjectID(),
-		CustomerName:  customerName,
-		CustomerEmail: customerEmail,
-		Status:        "PAGO", // Confirmado
-		Total:         product.Price,
-		CreatedAt:     time.Now(),
-		Items: []models.OrderItem{
-			{
-				ProductID:   product.ID,
-				ProductName: product.Name,
-				Price:       product.Price,
-				Quantity:    1,
-			},
-		},
+		ID:              primitive.NewObjectID(),
+		CustomerName:    customerName,
+		CustomerEmail:   customerEmail,
+		CustomerAddress: customerAddress,
+		Status:          status,
+		Total:           total,
+		CreatedAt:       time.Now(),
+		Items:           itemsToBuy,
 	}
 
-	return s.Repo.CreateOrder(order)
+	if err := s.Repo.CreateOrder(order); err != nil {
+		return nil, "", "", err
+	}
+
+	// Retorna dados do PIX (se houver)
+	return &order, pixCode, qrCodeImg, nil
+}
+
+func (s *StoreService) ConfirmPayment(orderIDStr string) error {
+	objID, err := primitive.ObjectIDFromHex(orderIDStr)
+	if err != nil {
+		return err
+	}
+	return s.Repo.UpdateOrderStatus(objID, "PAGO")
+}
+
+func (s *StoreService) AddProductToCart(userIDStr, productIDStr string, quantity int, size string) error {
+
+	// 1. Converter IDs
+	userID, _ := primitive.ObjectIDFromHex(userIDStr)
+
+	// Convert product ID string to ObjectID
+	productID, _ := primitive.ObjectIDFromHex(productIDStr)
+
+	// 2. Buscar dados atuais do Produto (Preço, Nome, Imagem)
+	product, err := s.Repo.GetProductByID(productID)
+	if err != nil {
+		return err
+	}
+
+	if quantity <= 0 {
+		quantity = 1
+	}
+
+	// 3. Montar o Item do Carrinho (Reutilizando OrderItem)
+	item := models.OrderItem{
+		ProductID:   product.ID,
+		ProductName: product.Name,
+		Price:       product.Price,
+		Quantity:    quantity,
+		Size:        size,
+		ImageURL:    product.ImageURL,
+	}
+
+	// 4. Salvar no User
+	return s.Repo.AddItemToCart(userID, item)
+}
+
+func (s *StoreService) RemoveProductFromCart(userIDStr, productIDStr, size string) error {
+	userID, _ := primitive.ObjectIDFromHex(userIDStr)
+	productID, _ := primitive.ObjectIDFromHex(productIDStr)
+
+	return s.Repo.RemoveItemFromCart(userID, productID, size)
+}
+
+func (s *StoreService) GetUserCart(userIDStr string) (*models.User, float64, error) {
+	userID, _ := primitive.ObjectIDFromHex(userIDStr)
+
+	user, err := s.Repo.GetUserWithCart(userID)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	// Calcular Total do Carrinho
+	var total int64 = 0
+	for _, item := range user.Cart {
+		total += item.Price * int64(item.Quantity)
+	}
+
+	// Retorna total formatado (float64 para o template)
+	return user, float64(total) / 100.0, nil
 }

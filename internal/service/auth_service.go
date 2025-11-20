@@ -64,13 +64,18 @@ func (as *AuthService) AuthenticateUser(email, password string) (*models.User, e
 }
 
 // Dados para o Dashboard
-func (as *AuthService) GetDashboardData(email string) (*models.User, []models.Order, error) {
-	user, err := as.Repo.GetUserByEmail(email)
+func (as *AuthService) GetDashboardData(userIDStr string) (*models.User, []models.Order, error) {
+	userID, err := primitive.ObjectIDFromHex(userIDStr)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	orders, err := as.Repo.GetOrdersByEmail(email)
+	user, err := as.Repo.GetUserByID(userID)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	orders, err := as.Repo.GetOrdersByEmail(user.Email)
 	if err != nil {
 		// Se der erro ao buscar pedidos, retorna lista vazia, mas não trava o user
 		orders = []models.Order{}

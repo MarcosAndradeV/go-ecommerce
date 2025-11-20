@@ -1,39 +1,54 @@
-{{define "content"}}
-<header class="mb-8 border-b border-gray-200 pb-6 flex justify-between items-end">
-  <div>
-    <h1 class="text-3xl font-bold text-gray-800 mb-2">Catálogo</h1>
-    <p class="text-gray-500">Confira nossos produtos disponíveis.</p>
+{{ template "base" . }} {{ define "content" }}
+<div class="flex flex-col gap-8">
+  <div class="flex items-center justify-between">
+    <h2 class="text-2xl font-bold text-gray-800">Catálogo</h2>
   </div>
-</header>
 
-<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+    {{ range .Data.Products }}
+    <div
+      class="bg-white rounded-xl shadow-sm hover:shadow-md transition duration-200 overflow-hidden border border-gray-100 flex flex-col h-full"
+    >
+      <a
+        href="/product/{{.ID.Hex}}"
+        class="block h-48 overflow-hidden relative group"
+      >
+        <img
+          src="{{.ImageURL}}"
+          alt="{{.Name}}"
+          class="w-full h-full object-cover transform group-hover:scale-105 transition duration-500"
+        />
+      </a>
 
-  {{range .Data}}
-  <a href="/product/{{.ID.Hex}}" class="group bg-white rounded-lg border border-gray-200 overflow-hidden hover:shadow-lg transition-all duration-300 flex flex-col">
+      <div class="p-5 flex flex-col flex-grow">
+        <a
+          href="/product/{{.ID.Hex}}"
+          class="text-lg font-bold text-gray-900 hover:text-blue-600 transition mb-2 line-clamp-1"
+        >
+          {{.Name}}
+        </a>
 
-    <div class="aspect-square bg-gray-100 overflow-hidden relative">
-      <img src="{{.ImageURL}}" alt="{{.Name}}" class="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500">
-    </div>
+        <div
+          class="pt-4 border-t border-gray-100 flex items-center justify-between mt-auto"
+        >
+          <span class="text-xl font-bold text-blue-700"
+            >{{.FormattedPrice}}</span
+          >
 
-    <div class="p-5 flex flex-col flex-grow">
-        <h2 class="text-gray-800 font-medium text-lg mb-1 leading-tight group-hover:text-blue-600 transition">{{.Name}}</h2>
-
-        <div class="mt-auto pt-4">
-            <p class="text-xl font-bold text-gray-900">{{.FormattedPrice}}</p>
-
-            {{if gt .Stock 0}}
-                <p class="text-xs text-green-600 font-semibold mt-1">Disponível</p>
-            {{else}}
-                <p class="text-xs text-red-500 font-semibold mt-1">Esgotado</p>
-            {{end}}
+          <a
+            href="/product/{{.ID.Hex}}"
+            class="bg-gray-100 hover:bg-gray-200 text-gray-800 text-sm font-medium px-4 py-2 rounded-lg transition"
+          >
+            Ver Detalhes
+          </a>
         </div>
+      </div>
     </div>
-  </a>
-  {{else}}
-    <div class="col-span-full py-12 text-center bg-white rounded border border-gray-200">
-        <p class="text-gray-400 text-lg">Nenhum produto encontrado no catálogo.</p>
+    {{ else }}
+    <div class="col-span-full text-center py-10 text-gray-500">
+      Nenhum produto encontrado.
     </div>
-  {{end}}
-
+    {{ end }}
+  </div>
 </div>
-{{end}}
+{{ end }}
