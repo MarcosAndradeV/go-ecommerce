@@ -6,6 +6,7 @@ import (
 
 	"github.com/MarcosAndradeV/go-ecommerce/internal/models"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
@@ -32,6 +33,21 @@ func (ur *UserRepository) GetUserByEmail(email string) (*models.User, error) {
 	var user models.User
 
 	err := coll.FindOne(context.TODO(), bson.M{"email": email}).Decode(&user)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return nil, errors.New("usuário não encontrado")
+		}
+		return nil, err
+	}
+	return &user, nil
+}
+
+// Busca usuário por ID
+func (ur *UserRepository) GetUserByID(id primitive.ObjectID) (*models.User, error) {
+	coll := ur.db.Collection("users")
+	var user models.User
+
+	err := coll.FindOne(context.TODO(), bson.M{"_id": id}).Decode(&user)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
 			return nil, errors.New("usuário não encontrado")

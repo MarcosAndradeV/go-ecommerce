@@ -14,12 +14,11 @@ type StoreHandler struct {
 	Service *service.StoreService
 }
 
-// Construtor
 func NewStoreHandler(s *service.StoreService) *StoreHandler {
 	return &StoreHandler{Service: s}
 }
 
-// --- ÁREA PÚBLICA ---
+// --- PÁGINA INICIAL ---
 
 func (h *StoreHandler) HomeHandler(w http.ResponseWriter, r *http.Request) {
 	products, err := h.Service.GetShowcase()
@@ -27,57 +26,14 @@ func (h *StoreHandler) HomeHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Erro ao carregar produtos", 500)
 		return
 	}
-	RenderTemplate(w, r, "index.html", products)
+	// CORREÇÃO: Enviando como Mapa para o .Data.Products funcionar
+	data := map[string]any{
+		"Products": products,
+	}
+	RenderTemplate(w, r, "index.html", data)
 }
 
-func (h *StoreHandler) EditProductFormHandler(w http.ResponseWriter, r *http.Request) {
-	idStr := chi.URLParam(r, "product_id")
-
-	if !CheckAuth(r) {
-		http.Redirect(w, r, "/login", http.StatusSeeOther)
-		return
-	}
-	product, err := h.Service.GetProductDetails(idStr)
-	if err != nil {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
-		return
-	}
-	RenderTemplate(w, r, "edit.html", product)
-}
-
-func (h *StoreHandler) EditProductHandler(w http.ResponseWriter, r *http.Request) {
-	if !CheckAuth(r) {
-		http.Redirect(w, r, "/login", http.StatusSeeOther)
-		return
-	}
-
-	name := r.FormValue("name")
-	desc := r.FormValue("description")
-	img := r.FormValue("image_url")
-	idStr := r.FormValue("id")
-	stock, _ := strconv.Atoi(r.FormValue("stock"))
-
-	// Parse do preço (10.50 -> 1050)
-	priceStr := strings.ReplaceAll(r.FormValue("price"), ",", ".")
-	priceFloat, _ := strconv.ParseFloat(priceStr, 64)
-	priceInt := int64(priceFloat * 100)
-
-	// Chama Service para criar (Você precisará adicionar CreateProduct no StoreService se não tiver)
-	id, err := primitive.ObjectIDFromHex(idStr)
-	if err != nil {
-		http.Error(w, "Erro ao criar: "+err.Error(), 500)
-		return
-	}
-	err = h.Service.EditProduct(id,
-		name, desc, img, priceInt, stock,
-	)
-	if err != nil {
-		http.Error(w, "Erro ao criar: "+err.Error(), 500)
-		return
-	}
-
-	http.Redirect(w, r, "/admin/dashboard", http.StatusSeeOther)
-}
+// --- DETALHES DO PRODUTO ---
 
 func (h *StoreHandler) ProductDetailHandler(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")
@@ -86,76 +42,235 @@ func (h *StoreHandler) ProductDetailHandler(w http.ResponseWriter, r *http.Reque
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 		return
 	}
-	RenderTemplate(w, r, "product.html", product)
+
+	data := map[string]any{
+		"Product": product,
+	}
+	RenderTemplate(w, r, "product.html", data)
 }
 
+
+func (h *StoreHandler) AddToCartHandler(w http.ResponseWriter, r *http.Request) {
+	productID := r.URL.Query().Get("id")
+	quantityStr := r.URL.Query().Get("quantity")
+	size := r.URL.Query().Get("size")
+
+	quantity, _ := strconv.Atoi(quantityStr)
+	if quantity <= 0 {
+		quantity = 1
+	}
+
+	cookie, _ := r.Cookie("sessao_loja")
+
+	err := h.Service.AddProductToCart(cookie.Value, productID, quantity, size)
+	if err != nil {
+		http.Redirect(w, r, "/?msg=error_cart", http.StatusSeeOther)
+		return
+	}
+
+	http.Redirect(w, r, "/cart", http.StatusSeeOther)
+}
+
+func (h *StoreHandler) RemoveFromCartHandler(w http.ResponseWriter, r *http.Request) {
+	productID := r.URL.Query().Get("id")
+	cookie, _ := r.Cookie("sessao_loja")
+
+	err := h.Service.RemoveProductFromCart(cookie.Value, productID)
+	if err != nil {
+		http.Redirect(w, r, "/cart?msg=error_remove", http.StatusSeeOther)
+		return
+	}
+
+	http.Redirect(w, r, "/cart", http.StatusSeeOther)
+}
+
+func (h *StoreHandler) ViewCartHandler(w http.ResponseWriter, r *http.Request) {
+    cookie, err := r.Cookie("sessao_loja")
+    // 1. Se não tem cookie, manda logar
+    if err != nil {
+        http.Redirect(w, r, "/login", http.StatusSeeOther)
+        return
+    }
+
+    user, total, err := h.Service.GetUserCart(cookie.Value)
+    if err != nil {
+
+        http.SetCookie(w, &http.Cookie{
+            Name: "sessao_loja",
+            MaxAge: -1,
+            Path: "/",
+        })
+        http.Redirect(w, r, "/login?msg=session_expired", http.StatusSeeOther)
+        return
+    }
+
+    data := map[string]any{
+        "Cart":       user.Cart,
+        "Total":      total,
+        "User":       user,
+        "IsLoggedIn": true,
+    }
+    RenderTemplate(w, r, "cart.html", data)
+}
+// --- CHECKOUT E COMPRA ---
+
 func (h *StoreHandler) CheckoutPageHandler(w http.ResponseWriter, r *http.Request) {
-	idStr := r.URL.Query().Get("product_id")
-	product, err := h.Service.GetProductDetails(idStr)
+	cookie, _ := r.Cookie("sessao_loja")
+
+	user, _, err := h.Service.GetUserCart(cookie.Value)
 	if err != nil {
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 		return
 	}
-	RenderTemplate(w, r, "checkout.html", product)
+
+	// Se for POST (vindo do carrinho), filtra os itens selecionados
+	var selectedItems []string
+	if r.Method == http.MethodPost {
+		r.ParseForm()
+		selectedItems = r.Form["selected_items"]
+	}
+
+	// Filtra o carrinho para mostrar apenas os selecionados (se houver seleção)
+	// Se não houver seleção (acesso direto ou nada marcado), mostra tudo ou avisa
+	var total int64 = 0
+
+	// Se veio do POST mas nada foi selecionado, redireciona pro carrinho
+	if r.Method == http.MethodPost && len(selectedItems) == 0 {
+		http.Redirect(w, r, "/cart?msg=select_items", http.StatusSeeOther)
+		return
+	}
+
+	// Se é GET, assume tudo (ou nada, dependendo da regra. Vamos assumir tudo por compatibilidade)
+	// Mas o usuário pediu "selecionar quais comprar". Então GET direto pode ser "comprar tudo" ou vazio.
+	// Vamos assumir: GET = Tudo. POST = Selecionados.
+
+	finalCart := user.Cart
+	if len(selectedItems) > 0 {
+		finalCart = nil
+		for _, item := range user.Cart {
+			for _, selID := range selectedItems {
+				if item.ProductID.Hex() == selID {
+					finalCart = append(finalCart, item)
+					break
+				}
+			}
+		}
+	}
+
+	for _, item := range finalCart {
+		total += item.Price * int64(item.Quantity)
+	}
+
+	data := map[string]any{
+		"Cart":  finalCart,
+		"Total": float64(total) / 100.0,
+		"User":  user,
+	}
+	RenderTemplate(w, r, "checkout.html", data)
 }
 
 func (h *StoreHandler) PurchaseHandler(w http.ResponseWriter, r *http.Request) {
-	idStr := r.FormValue("product_id")
-	name := r.FormValue("name")
-	email := r.FormValue("email")
-
-	// Novos campos do formulário
-	cardNum := r.FormValue("card_number")
+	r.ParseForm()
+	// cardName := r.FormValue("card_name") // Não usado por enquanto
+	cardNumber := r.FormValue("card_number")
 	cardCVV := r.FormValue("card_cvv")
+	selectedItems := r.Form["selected_items"]
 
-	// Passamos tudo para o serviço
-	err := h.Service.ProcessPurchase(idStr, name, email, cardNum, cardCVV)
+	cookie, _ := r.Cookie("sessao_loja")
+	// Precisamos do email do user. O cookie tem o ID.
+	// Vamos buscar o user de novo ou confiar que o ID está certo.
+	// O Service vai buscar o user pelo ID.
+	// Mas precisamos passar o nome e email para o pedido.
+	// O Service pode pegar isso do User que ele busca.
+	// Vamos ajustar o Service para pegar nome/email do User do banco, não do form (mais seguro).
 
+	// Ajuste rápido: Passar strings vazias e deixar o Service preencher se possível,
+	// ou buscar aqui. Vamos buscar aqui pra garantir.
+	user, _, _ := h.Service.GetUserCart(cookie.Value)
+
+	err := h.Service.ProcessCartPurchase(cookie.Value, user.Name, user.Email, cardNumber, cardCVV, selectedItems)
 	if err != nil {
-		// Se der erro (ex: cartão recusado), voltamos para o checkout com erro
-		// Idealmente passariamos a mensagem de erro para o template
-		http.Error(w, "Falha na compra: "+err.Error(), 400)
+		http.Error(w, "Erro na compra: "+err.Error(), 500)
 		return
 	}
 
 	RenderTemplate(w, r, "success.html", nil)
 }
 
-// --- ÁREA ADMIN (Incluída aqui pois usa StoreService) ---
+// --- ÁREA ADMIN ---
 
 func (h *StoreHandler) AdminDashboardHandler(w http.ResponseWriter, r *http.Request) {
 	if !CheckAuth(r) {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
-
-	// Reutiliza a lógica de listar produtos
 	products, _ := h.Service.GetShowcase()
-	RenderTemplate(w, r, "admin.html", products)
+
+	data := map[string]any{
+		"Products": products,
+	}
+	RenderTemplate(w, r, "admin.html", data)
 }
 
 func (h *StoreHandler) AdminCreateProductHandler(w http.ResponseWriter, r *http.Request) {
-	if !CheckAuth(r) {
-		http.Redirect(w, r, "/login", http.StatusSeeOther)
-		return
-	}
+	if !CheckAuth(r) { http.Redirect(w, r, "/login", http.StatusSeeOther); return }
 
 	name := r.FormValue("name")
 	desc := r.FormValue("description")
 	img := r.FormValue("image_url")
 	stock, _ := strconv.Atoi(r.FormValue("stock"))
-
-	// Parse do preço (10.50 -> 1050)
 	priceStr := strings.ReplaceAll(r.FormValue("price"), ",", ".")
 	priceFloat, _ := strconv.ParseFloat(priceStr, 64)
 	priceInt := int64(priceFloat * 100)
 
-	// Chama Service para criar (Você precisará adicionar CreateProduct no StoreService se não tiver)
-	err := h.Service.CreateProduct(name, desc, img, priceInt, stock)
-	if err != nil {
-		http.Error(w, "Erro ao criar: "+err.Error(), 500)
-		return
+	sizesStr := r.FormValue("sizes")
+	var sizes []string
+	if sizesStr != "" {
+		parts := strings.Split(sizesStr, ",")
+		for _, p := range parts {
+			sizes = append(sizes, strings.TrimSpace(p))
+		}
 	}
+
+	h.Service.CreateProduct(name, desc, img, priceInt, stock, sizes)
+	http.Redirect(w, r, "/admin/dashboard", http.StatusSeeOther)
+}
+
+func (h *StoreHandler) EditProductFormHandler(w http.ResponseWriter, r *http.Request) {
+	idStr := chi.URLParam(r, "product_id")
+	if !CheckAuth(r) { http.Redirect(w, r, "/login", http.StatusSeeOther); return }
+
+	product, err := h.Service.GetProductDetails(idStr)
+	if err != nil { http.Redirect(w, r, "/", http.StatusSeeOther); return }
+
+	data := map[string]any{ "Product": product }
+	RenderTemplate(w, r, "edit.html", data)
+}
+
+func (h *StoreHandler) EditProductHandler(w http.ResponseWriter, r *http.Request) {
+	if !CheckAuth(r) { http.Redirect(w, r, "/login", http.StatusSeeOther); return }
+
+	idStr := r.FormValue("id")
+	id, _ := primitive.ObjectIDFromHex(idStr)
+
+	name := r.FormValue("name")
+	desc := r.FormValue("description")
+	img := r.FormValue("image_url")
+	stock, _ := strconv.Atoi(r.FormValue("stock"))
+	priceStr := strings.ReplaceAll(r.FormValue("price"), ",", ".")
+	priceFloat, _ := strconv.ParseFloat(priceStr, 64)
+	priceInt := int64(priceFloat * 100)
+
+	sizesStr := r.FormValue("sizes")
+	var sizes []string
+	if sizesStr != "" {
+		parts := strings.Split(sizesStr, ",")
+		for _, p := range parts {
+			sizes = append(sizes, strings.TrimSpace(p))
+		}
+	}
+
+	h.Service.EditProduct(id, name, desc, img, priceInt, stock, sizes)
 
 	http.Redirect(w, r, "/admin/dashboard", http.StatusSeeOther)
 }

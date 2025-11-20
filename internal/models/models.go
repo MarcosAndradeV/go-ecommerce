@@ -12,8 +12,10 @@ type User struct {
 	Name         string             `bson:"name"`
 	Email        string             `bson:"email"`
 	PasswordHash string             `bson:"password_hash"`
-	IsAdmin      bool               `bson:"is_admin"`      
+	IsAdmin      bool               `bson:"is_admin"`
 	CreatedAt    time.Time          `bson:"created_at"`
+
+	Cart         []OrderItem        `bson:"cart"`
 }
 
 type Product struct {
@@ -25,6 +27,7 @@ type Product struct {
 	Price int64 `bson:"price"`
 
 	Stock int `bson:"stock"`
+	Sizes []string `bson:"sizes"` // <--- Generic Size/Attribute
 
 	CreatedAt time.Time `bson:"created_at"`
 	UpdatedAt time.Time `bson:"updated_at"`
@@ -38,9 +41,10 @@ type OrderItem struct {
 	ProductID   primitive.ObjectID `bson:"product_id"`
 	ProductName string             `bson:"product_name"`
 
-	Price int64 `bson:"price"`
-
-	Quantity int `bson:"quantity"`
+	Price int64 										`bson:"price"`
+	Quantity int 										`bson:"quantity"`
+	Size     string             `bson:"size"` // <--- Selected Size
+	ImageURL    string             	`bson:"image_url"`
 }
 
 func (i OrderItem) TotalItem() string {

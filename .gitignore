@@ -1,0 +1,5 @@
+.zed/
+tmp/
+.air.toml
+.env
+

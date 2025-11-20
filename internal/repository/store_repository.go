@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/MarcosAndradeV/go-ecommerce/internal/models"
 	"go.mongodb.org/mongo-driver/bson"
@@ -97,4 +98,42 @@ func (r *StoreRepository) CreateOrder(order models.Order) error {
 	coll := r.db.Collection("orders")
 	_, err := coll.InsertOne(context.Background(), order)
 	return err
+}
+
+func (r *StoreRepository) AddItemToCart(userID primitive.ObjectID, item models.OrderItem) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	userColl := r.db.Collection("users")
+
+	filter := bson.M{"_id": userID}
+	update := bson.M{"$push": bson.M{"cart": item}}
+
+	_, err := userColl.UpdateOne(ctx, filter, update)
+	return err
+}
+
+func (r *StoreRepository) RemoveItemFromCart(userID primitive.ObjectID, productID primitive.ObjectID) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	userColl := r.db.Collection("users")
+
+	// Remove o item do array 'cart' onde o product_id bate
+	filter := bson.M{"_id": userID}
+	update := bson.M{"$pull": bson.M{"cart": bson.M{"product_id": productID}}}
+
+	_, err := userColl.UpdateOne(ctx, filter, update)
+	return err
+}
+
+func (r *StoreRepository) GetUserWithCart(userID primitive.ObjectID) (*models.User, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	userColl := r.db.Collection("users")
+
+	var user models.User
+	err := userColl.FindOne(ctx, bson.M{"_id": userID}).Decode(&user)
+	return &user, err
 }

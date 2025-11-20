@@ -1,22 +1,25 @@
 {{define "content"}}
 <div class="max-w-5xl mx-auto">
-    
 
-    <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+    <div class="flex items-center justify-between mb-6">
+        <h1 class="text-2xl font-bold text-gray-800">Minha Conta</h1>
+        <div class="text-sm text-gray-500">Olá, <span class="font-semibold text-gray-800">{{.Data.User.Name}}</span></div>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
         <div class="px-6 py-4 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
             <h2 class="font-semibold text-gray-700">Histórico de Pedidos</h2>
-            <span class="text-xs text-gray-400 bg-white px-2 py-1 border rounded">Atualizado agora</span>
         </div>
 
         {{if .Data.Orders}}
         <div class="overflow-x-auto">
             <table class="w-full text-left text-sm text-gray-600">
-                <thead class="bg-gray-50 text-xs uppercase font-medium text-gray-400 border-b border-gray-100">
+                <thead class="bg-gray-50 text-xs uppercase font-medium text-gray-500 border-b border-gray-100">
                     <tr>
                         <th class="px-6 py-3">Data</th>
-                        <th class="px-6 py-3">Status</th>
-                        <th class="px-6 py-3">Resumo do Pedido</th>
-                        <th class="px-6 py-3 text-right">Valor Total</th>
+                        <th class="px-6 py-3">Estado</th>
+                        <th class="px-6 py-3">Resumo</th>
+                        <th class="px-6 py-3 text-right">Total</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-100">
@@ -26,15 +29,15 @@
                             {{.CreatedAt.Format "02/01/2006"}}
                         </td>
                         <td class="px-6 py-4">
-                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-200">
                                 {{.Status}}
                             </span>
                         </td>
                         <td class="px-6 py-4">
                             <ul class="space-y-1">
                                 {{range .Items}}
-                                <li class="text-gray-700">
-                                    <span class="font-bold text-xs text-gray-400">{{.Quantity}}x</span> {{.ProductName}}
+                                <li class="text-gray-700 text-xs">
+                                    <span class="font-bold">{{.Quantity}}x</span> {{.ProductName}}
                                 </li>
                                 {{end}}
                             </ul>
@@ -49,8 +52,7 @@
         </div>
         {{else}}
             <div class="p-12 text-center">
-                <div class="text-gray-300 text-5xl mb-4">🛍️</div>
-                <p class="text-gray-500 text-lg mb-4">Você ainda não realizou nenhuma compra.</p>
+                <p class="text-gray-500 text-lg mb-4">Ainda não realizou nenhuma compra.</p>
                 <a href="/" class="text-blue-600 font-medium hover:underline">Ir para o catálogo</a>
             </div>
         {{end}}

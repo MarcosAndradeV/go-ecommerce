@@ -2,50 +2,63 @@ package routes
 
 import (
 	"net/http"
+	"net/url" // <--- Import added
 
 	"github.com/MarcosAndradeV/go-ecommerce/internal/handlers"
+	"github.com/MarcosAndradeV/go-ecommerce/internal/service" // Import necessário
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 )
 
-// NewRouter recebe os handlers já instanciados e devolve o roteador configurado
-func NewRouter(authH *handlers.AuthHandler, storeH *handlers.StoreHandler) *chi.Mux {
+// Middleware Simplificado: Apenas verifica se tem o cookie
+func AuthMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, err := r.Cookie("sessao_loja")
+		if err != nil {
+			// Sem cookie = Redireciona para login com next
+			nextURL := r.URL.RequestURI()
+			http.Redirect(w, r, "/login?msg=faca_login&next="+url.QueryEscape(nextURL), http.StatusSeeOther)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
+func NewRouter(authH *handlers.AuthHandler, storeH *handlers.StoreHandler, authS *service.AuthService) *chi.Mux {
 	r := chi.NewRouter()
 
-	// --- Middlewares Globais ---
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
-	// r.Use(middleware.RealIP) // Útil se for pra produção
 
-	// --- Arquivos Estáticos (CSS/JS/Imagens) ---
 	fileServer := http.FileServer(http.Dir("./static"))
 	r.Handle("/static/*", http.StripPrefix("/static", fileServer))
 
-	// --- ROTAS DA LOJA (Públicas) ---
+	// --- ROTAS PÚBLICAS ---
 	r.Get("/", storeH.HomeHandler)
 	r.Get("/product/{id}", storeH.ProductDetailHandler)
-	r.Get("/checkout", storeH.CheckoutPageHandler)
-	r.Post("/purchase", storeH.PurchaseHandler)
 
-	// --- ROTAS DE AUTENTICAÇÃO ---
-
-	// Registro
+	// --- AUTH ---
 	r.Get("/register", authH.RegisterPageHandler)
 	r.Post("/register", authH.RegisterPostHandler)
-
-	// Login / Logout
 	r.Get("/login", authH.LoginPageHandler)
 	r.Post("/do-login", authH.LoginPostHandler)
 	r.Get("/logout", authH.LogoutHandler)
 
-	// Área do Cliente (Protegida por verificação interna no handler)
-	r.Get("/dashboard", authH.DashboardHandler)
+	// --- ROTAS PROTEGIDAS (Usa o Middleware) ---
+	r.Group(func(r chi.Router) {
+		r.Use(AuthMiddleware)
 
-	// --- ÁREA ADMIN (Opcional: Agrupar rotas) ---
+		r.Get("/dashboard", authH.DashboardHandler)
+		r.Get("/cart", storeH.ViewCartHandler)
+		r.Get("/add-to-cart", storeH.AddToCartHandler)
+		r.Get("/remove-from-cart", storeH.RemoveFromCartHandler) // <--- Nova rota
+		r.Get("/checkout", storeH.CheckoutPageHandler)
+		r.Post("/checkout", storeH.CheckoutPageHandler) // <--- Permitir POST para seleção
+		r.Post("/purchase", storeH.PurchaseHandler)
+	})
+
+	// --- ADMIN ---
 	r.Route("/admin", func(r chi.Router) {
-		r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-			http.Redirect(w, r, "/admin/dashboard", http.StatusSeeOther)
-		})
 		r.Get("/dashboard", storeH.AdminDashboardHandler)
 		r.Post("/create", storeH.AdminCreateProductHandler)
 		r.Get("/edit/product/{product_id}", storeH.EditProductFormHandler)

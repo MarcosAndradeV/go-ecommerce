@@ -1,25 +1,25 @@
 {{define "content"}}
-<div class="flex items-center justify-center min-h-[50vh]">
-    <div class="bg-white p-10 rounded-xl shadow-sm border border-gray-200 text-center max-w-lg">
-        
-        <div class="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6">
-            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
+<div class="flex items-center justify-center min-h-[60vh]">
+    <div class="bg-white p-10 rounded-xl shadow-sm border border-gray-200 text-center max-w-md w-full">
+
+        <div class="w-20 h-20 bg-green-50 text-green-500 rounded-full flex items-center justify-center mx-auto mb-6 animate-bounce">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
             </svg>
         </div>
-        
-        <h1 class="text-2xl font-bold text-gray-900 mb-2">Pedido Confirmado!</h1>
+
+        <h1 class="text-3xl font-black text-gray-900 mb-3 tracking-tight">Sucesso!</h1>
         <p class="text-gray-500 mb-8 leading-relaxed">
-            Obrigado pela sua compra. Seu pedido foi registrado com sucesso e já estamos preparando tudo.
+            O seu pedido foi confirmado. Enviámos um e-mail com os detalhes da compra.
         </p>
-        
+
         <div class="space-y-3">
-            <a href="/" class="block w-full bg-blue-600 text-white font-bold py-3 rounded hover:bg-blue-700 transition">
-                Continuar Comprando
+            <a href="/dashboard" class="block w-full bg-gray-900 text-white font-bold py-3.5 rounded-lg hover:bg-black transition shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 duration-200">
+                Ver Meus Pedidos
             </a>
-            
-            <a href="/dashboard" class="block w-full text-blue-600 font-medium py-2 hover:underline">
-                Ver meus pedidos
+
+            <a href="/" class="block w-full text-gray-500 font-medium py-2 hover:text-blue-600 transition">
+                Voltar à Loja
             </a>
         </div>
     </div>

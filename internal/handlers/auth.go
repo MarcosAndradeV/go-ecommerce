@@ -11,13 +11,73 @@ type AuthHandler struct {
 	Service *service.AuthService
 }
 
-// Construtor
 func NewAuthHandler(s *service.AuthService) *AuthHandler {
 	return &AuthHandler{Service: s}
 }
 
-// --- REGISTRO ---
+// --- LOGIN ---
 
+func (h *AuthHandler) LoginPageHandler(w http.ResponseWriter, r *http.Request) {
+	next := r.URL.Query().Get("next")
+	data := map[string]any{
+		"Next": next,
+	}
+	RenderTemplate(w, r, "login.html", data)
+}
+
+func (h *AuthHandler) LoginPostHandler(w http.ResponseWriter, r *http.Request) {
+	email := r.FormValue("email")
+	password := r.FormValue("password")
+	next := r.FormValue("next") // <--- Captura o next
+
+	// 1. Admin Hardcoded
+	if email == "admin" && password == "admin123" {
+		http.SetCookie(w, &http.Cookie{
+			Name:  "sessao_admin",
+			Value: "true",
+			Path:  "/", // <--- OBRIGATÓRIO
+		})
+		http.Redirect(w, r, "/admin/dashboard", http.StatusSeeOther)
+		return
+	}
+
+	// 2. Cliente
+	user, err := h.Service.AuthenticateUser(email, password)
+	if err != nil {
+		// Se falhar, mantém o next na URL para tentar de novo
+		redirectURL := "/login?error=invalid"
+		if next != "" {
+			redirectURL += "&next=" + next
+		}
+		http.Redirect(w, r, redirectURL, http.StatusSeeOther)
+		return
+	}
+
+	// --- CORREÇÃO CRÍTICA: Path "/" ---
+	http.SetCookie(w, &http.Cookie{
+		Name:     "sessao_loja",
+		Value:    user.ID.Hex(),
+		Path:     "/",                     // <--- ISSO CONSERTA O LOOP DE LOGIN
+		Expires:  time.Now().Add(24 * time.Hour),
+		HttpOnly: true,
+	})
+
+	// Se tiver next, vai pra lá. Senão, home.
+	if next != "" {
+		http.Redirect(w, r, next, http.StatusSeeOther)
+		return
+	}
+	http.Redirect(w, r, "/", http.StatusSeeOther)
+}
+
+func (h *AuthHandler) LogoutHandler(w http.ResponseWriter, r *http.Request) {
+	// Para sair, "matamos" o cookie definindo MaxAge -1
+	http.SetCookie(w, &http.Cookie{Name: "sessao_loja", Value: "", Path: "/", MaxAge: -1})
+	http.SetCookie(w, &http.Cookie{Name: "sessao_admin", Value: "", Path: "/", MaxAge: -1})
+	http.Redirect(w, r, "/", http.StatusSeeOther)
+}
+
+// ... (Mantenha RegisterPageHandler e RegisterPostHandler como estão)
 func (h *AuthHandler) RegisterPageHandler(w http.ResponseWriter, r *http.Request) {
 	RenderTemplate(w, r, "register.html", nil)
 }
@@ -32,50 +92,8 @@ func (h *AuthHandler) RegisterPostHandler(w http.ResponseWriter, r *http.Request
 		http.Redirect(w, r, "/register?error=true", http.StatusSeeOther)
 		return
 	}
-
 	http.Redirect(w, r, "/login?success=created", http.StatusSeeOther)
 }
-
-// --- LOGIN (Híbrido) ---
-
-func (h *AuthHandler) LoginPageHandler(w http.ResponseWriter, r *http.Request) {
-	RenderTemplate(w, r, "login.html", nil)
-}
-
-func (h *AuthHandler) LoginPostHandler(w http.ResponseWriter, r *http.Request) {
-	email := r.FormValue("email")
-	password := r.FormValue("password")
-
-	// 1. Admin Hardcoded (Prioridade)
-	if email == "admin" && password == "admin123" {
-		http.SetCookie(w, &http.Cookie{
-			Name:    "sessao_admin",
-			Value:   "true",
-			Path:    "/",
-			Expires: time.Now().Add(24 * time.Hour),
-		})
-		http.Redirect(w, r, "/admin/dashboard", http.StatusSeeOther)
-		return
-	}
-
-	// 2. Cliente via Banco (Service)
-	user, err := h.Service.AuthenticateUser(email, password)
-	if err == nil {
-		http.SetCookie(w, &http.Cookie{
-			Name:    "sessao_loja",
-			Value:   user.Email,
-			Path:    "/",
-			Expires: time.Now().Add(24 * time.Hour),
-		})
-		http.Redirect(w, r, "/", http.StatusSeeOther)
-		return
-	}
-
-	// Falha
-	http.Redirect(w, r, "/login?error=invalid", http.StatusSeeOther)
-}
-
-// --- DASHBOARD / LOGOUT ---
 
 func (h *AuthHandler) DashboardHandler(w http.ResponseWriter, r *http.Request) {
 	cookie, err := r.Cookie("sessao_loja")
@@ -84,24 +102,16 @@ func (h *AuthHandler) DashboardHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Busca dados completos
 	user, orders, err := h.Service.GetDashboardData(cookie.Value)
 	if err != nil {
+		// Se o usuário não existe mais, desloga
 		http.Redirect(w, r, "/logout", http.StatusSeeOther)
 		return
 	}
 
-	// Struct anônima para passar dados combinados
-	data := struct {
-		User   any
-		Orders any
-	}{user, orders}
-
+	data := map[string]any{
+		"User":   user,
+		"Orders": orders,
+	}
 	RenderTemplate(w, r, "dashboard.html", data)
-}
-
-func (h *AuthHandler) LogoutHandler(w http.ResponseWriter, r *http.Request) {
-	http.SetCookie(w, &http.Cookie{Name: "sessao_admin", MaxAge: -1})
-	http.SetCookie(w, &http.Cookie{Name: "sessao_loja", MaxAge: -1})
-	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
