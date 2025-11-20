@@ -44,6 +44,7 @@ func NewRouter(authH *handlers.AuthHandler, storeH *handlers.StoreHandler) *chi.
 	// --- ÁREA ADMIN (Opcional: Agrupar rotas) ---
 	r.Route("/admin", func(r chi.Router) {
 		r.Get("/dashboard", storeH.AdminDashboardHandler)
+		r.Get("/create", storeH.AdminCreateProductHandler)
 	})
 
 	return r
