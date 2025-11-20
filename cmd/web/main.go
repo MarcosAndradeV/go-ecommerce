@@ -8,11 +8,10 @@ import (
 	"time"
 
 	"github.com/MarcosAndradeV/go-ecommerce/internal/database"
-	"github.com/MarcosAndradeV/go-ecommerce/internal/models"
+	"github.com/MarcosAndradeV/go-ecommerce/internal/handlers"
+	"github.com/MarcosAndradeV/go-ecommerce/internal/routes"
 	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
 	"github.com/joho/godotenv"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 func main() {
@@ -31,29 +30,15 @@ func main() {
 	}
 	log.Println("Info: Connectado ao mongodb")
 
-	product := models.Product{
-		ID:          primitive.NewObjectID(),
-		Name:        "iPhone 15 Pro (Mock)",
-		Description: "Titânio, chip A17 Pro, botão de ação.",
-		ImageURL:    "https://store.storeimages.cdn-apple.com/4982/as-images.apple.com/is/iphone-15-pro-titanium-blue-select?wid=512&hei=512&fmt=jpeg&qlt=90&.v=1692891194305",
-		Price:       999900,
-		Stock:       10,
-	}
-	if _, err := dbstore.DB.Collection("Product").InsertOne(ctx, product); err != nil {
-		log.Println("Error:", err)
-	}
-
 	r := chi.NewRouter()
-	r.Use(middleware.Logger)
-	r.Use(middleware.Recoverer)
-
-	fileServer := http.FileServer(http.Dir("./static"))
-	r.Handle("/static/*", http.StripPrefix("/static", fileServer))
+	h := handlers.NewHandler(dbstore, ctx);
+	routes.SetupRoutes(r, h)
 
 	port := env["PORT"]
 	if port == "" {
 		port = "8080"
 	}
+
 	fmt.Printf("Servidor rodando em http://localhost:%s\n", port)
 	http.ListenAndServe(":"+port, r)
 	dbstore.Disconnect(ctx)

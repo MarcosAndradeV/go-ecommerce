@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"context"
 	"net/http"
 	"strconv"
 	"strings"
@@ -19,12 +18,12 @@ func (h*Handler) AdminDashboard(w http.ResponseWriter, r *http.Request) {
 	}
 
 	coll := h.GetCollection("products")
-	cursor, _ := coll.Find(context.TODO(), bson.M{})
+	cursor, _ := coll.Find(h.Ctx, bson.M{})
 
 	var products []models.Product
-	cursor.All(context.TODO(), &products)
+	cursor.All(h.Ctx, &products)
 
-	renderTemplate(w, r, "admin.html", products)
+	RenderTemplate(w, r, "admin.html", products)
 }
 
 // Criar Produto
@@ -51,7 +50,7 @@ func (h *Handler) AdminCreateProduct(w http.ResponseWriter, r *http.Request) {
 	}
 
 	coll := h.GetCollection("products")
-	coll.InsertOne(context.TODO(), product)
+	coll.InsertOne(h.Ctx, product)
 
 	http.Redirect(w, r, "/admin", http.StatusSeeOther)
 }
