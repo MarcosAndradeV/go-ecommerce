@@ -63,13 +63,13 @@ func (s *StoreService) GetProductDetails(idStr string) (*models.Product, error) 
 	return s.Repo.GetProductByID(objID)
 }
 
-func (s *StoreService) ProcessCartPurchase(userIDStr, customerName, customerEmail, customerAddress, paymentMethod, cardNum, cardCVV string, selectedItems []string) (string, string, error) {
+	func (s *StoreService) ProcessCartPurchase(userIDStr, customerName, customerEmail, customerAddress, paymentMethod, cardNum, cardCVV string, selectedItems []string) (*models.Order, string, string, error) {
 	userID, _ := primitive.ObjectIDFromHex(userIDStr)
 
 	// 1. Buscar Carrinho
 	user, err := s.Repo.GetUserWithCart(userID)
 	if err != nil {
-		return "", "", err
+		return nil, "", "", err
 	}
 
 	// 2. Filtrar itens e Calcular Total
@@ -87,7 +87,7 @@ func (s *StoreService) ProcessCartPurchase(userIDStr, customerName, customerEmai
 		if shouldBuy {
 			product, err := s.Repo.GetProductByID(item.ProductID)
 			if err != nil || product.Stock < item.Quantity {
-				return "", "", errors.New("produto " + item.ProductName + " sem estoque")
+				return nil, "", "", errors.New("produto " + item.ProductName + " sem estoque")
 			}
 			itemsToBuy = append(itemsToBuy, item)
 			total += item.Price * int64(item.Quantity)
@@ -95,7 +95,7 @@ func (s *StoreService) ProcessCartPurchase(userIDStr, customerName, customerEmai
 	}
 
 	if len(itemsToBuy) == 0 {
-		return "", "", errors.New("nenhum item selecionado")
+		return nil, "", "", errors.New("nenhum item selecionado")
 	}
 
 	// 3. PROCESSAR PAGAMENTO
@@ -107,7 +107,7 @@ func (s *StoreService) ProcessCartPurchase(userIDStr, customerName, customerEmai
 		// Gera o PIX
 		code, img, err := s.Payment.GeneratePix(total)
 		if err != nil {
-			return "", "", err
+			return nil, "", "", err
 		}
 		pixCode = code
 		qrCodeImg = img
@@ -115,7 +115,7 @@ func (s *StoreService) ProcessCartPurchase(userIDStr, customerName, customerEmai
 		// Processa Cartão (usa o método renomeado ou antigo)
 		err = s.Payment.ProcessPaymentCard(cardNum, customerName, cardCVV, total)
 		if err != nil {
-			return "", "", err
+			return nil, "", "", err
 		}
 	}
 
@@ -140,11 +140,19 @@ func (s *StoreService) ProcessCartPurchase(userIDStr, customerName, customerEmai
 	}
 
 	if err := s.Repo.CreateOrder(order); err != nil {
-		return "", "", err
+		return nil, "", "", err
 	}
 
 	// Retorna dados do PIX (se houver)
-	return pixCode, qrCodeImg, nil
+	return &order, pixCode, qrCodeImg, nil
+}
+
+func (s *StoreService) ConfirmPayment(orderIDStr string) error {
+	objID, err := primitive.ObjectIDFromHex(orderIDStr)
+	if err != nil {
+		return err
+	}
+	return s.Repo.UpdateOrderStatus(objID, "PAGO")
 }
 
 func (s *StoreService) AddProductToCart(userIDStr, productIDStr string, quantity int, size string) error {

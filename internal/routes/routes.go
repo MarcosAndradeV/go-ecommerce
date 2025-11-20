@@ -56,6 +56,7 @@ func NewRouter(authH *handlers.AuthHandler, storeH *handlers.StoreHandler, authS
 		r.Post("/checkout", storeH.CheckoutPageHandler) // <--- Permitir POST para seleção
 		r.Post("/payment", storeH.PaymentPageHandler)   // <--- Nova rota de pagamento
 		r.Post("/purchase", storeH.PurchaseHandler)
+		r.Post("/purchase/simulate/{id}", storeH.SimulatePaymentHandler)
 	})
 
 	// --- ADMIN ---

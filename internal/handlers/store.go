@@ -187,21 +187,35 @@ func (h *StoreHandler) PurchaseHandler(w http.ResponseWriter, r *http.Request) {
 	cookie, _ := r.Cookie("sessao_loja")
 
 	// Chama o serviço atualizado
-	pixCode, qrCodeImg, err := h.Service.ProcessCartPurchase(cookie.Value, name, email, address, paymentMethod, cardNumber, cardCVV, selectedItems)
+	order, pixCode, qrCodeImg, err := h.Service.ProcessCartPurchase(cookie.Value, name, email, address, paymentMethod, cardNumber, cardCVV, selectedItems)	
 	
 	if err != nil {
 		http.Error(w, "Erro na compra: "+err.Error(), 500)
 		return
 	}
 
-	// Prepara dados para o template de sucesso
 	data := map[string]any{
+        "Order":       order, // <--- Passamos o objeto Order (com ID)
 		"PixCode":     pixCode,
 		"QRCodeImage": qrCodeImg,
 		"IsPix":       paymentMethod == "pix",
 	}
 
 	RenderTemplate(w, r, "success.html", data)
+}
+
+func (h *StoreHandler) SimulatePaymentHandler(w http.ResponseWriter, r *http.Request) {
+	orderID := chi.URLParam(r, "id")
+    
+    // Chama o serviço para mudar status para PAGO
+	err := h.Service.ConfirmPayment(orderID)
+	if err != nil {
+		http.Error(w, "Erro ao simular pagamento: "+err.Error(), 500)
+		return
+	}
+
+    // Redireciona para o dashboard para ver o status atualizado
+	http.Redirect(w, r, "/dashboard?msg=payment_confirmed", http.StatusSeeOther)
 }
 
 // --- ÁREA ADMIN ---
