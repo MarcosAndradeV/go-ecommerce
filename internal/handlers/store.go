@@ -50,7 +50,6 @@ func (h *StoreHandler) ProductDetailHandler(w http.ResponseWriter, r *http.Reque
 	RenderTemplate(w, r, "product.html", data)
 }
 
-
 func (h *StoreHandler) AddToCartHandler(w http.ResponseWriter, r *http.Request) {
 	productID := r.URL.Query().Get("id")
 	quantityStr := r.URL.Query().Get("quantity")
@@ -87,33 +86,34 @@ func (h *StoreHandler) RemoveFromCartHandler(w http.ResponseWriter, r *http.Requ
 }
 
 func (h *StoreHandler) ViewCartHandler(w http.ResponseWriter, r *http.Request) {
-    cookie, err := r.Cookie("sessao_loja")
-    // 1. Se não tem cookie, manda logar
-    if err != nil {
-        http.Redirect(w, r, "/login", http.StatusSeeOther)
-        return
-    }
+	cookie, err := r.Cookie("sessao_loja")
+	// 1. Se não tem cookie, manda logar
+	if err != nil {
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
+	}
 
-    user, total, err := h.Service.GetUserCart(cookie.Value)
-    if err != nil {
+	user, total, err := h.Service.GetUserCart(cookie.Value)
+	if err != nil {
 
-        http.SetCookie(w, &http.Cookie{
-            Name: "sessao_loja",
-            MaxAge: -1,
-            Path: "/",
-        })
-        http.Redirect(w, r, "/login?msg=session_expired", http.StatusSeeOther)
-        return
-    }
+		http.SetCookie(w, &http.Cookie{
+			Name:   "sessao_loja",
+			MaxAge: -1,
+			Path:   "/",
+		})
+		http.Redirect(w, r, "/login?msg=session_expired", http.StatusSeeOther)
+		return
+	}
 
-    data := map[string]any{
-        "Cart":       user.Cart,
-        "Total":      total,
-        "User":       user,
-        "IsLoggedIn": true,
-    }
-    RenderTemplate(w, r, "cart.html", data)
+	data := map[string]any{
+		"Cart":       user.Cart,
+		"Total":      total,
+		"User":       user,
+		"IsLoggedIn": true,
+	}
+	RenderTemplate(w, r, "cart.html", data)
 }
+
 // --- CHECKOUT E COMPRA ---
 
 func (h *StoreHandler) CheckoutPageHandler(w http.ResponseWriter, r *http.Request) {
@@ -173,7 +173,7 @@ func (h *StoreHandler) CheckoutPageHandler(w http.ResponseWriter, r *http.Reques
 
 func (h *StoreHandler) PurchaseHandler(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
-	
+
 	// Captura novos campos
 	paymentMethod := r.FormValue("payment_method") // "pix" ou "credit_card"
 	cardNumber := r.FormValue("card_number")
@@ -187,15 +187,15 @@ func (h *StoreHandler) PurchaseHandler(w http.ResponseWriter, r *http.Request) {
 	cookie, _ := r.Cookie("sessao_loja")
 
 	// Chama o serviço atualizado
-	order, pixCode, qrCodeImg, err := h.Service.ProcessCartPurchase(cookie.Value, name, email, address, paymentMethod, cardNumber, cardCVV, selectedItems)	
-	
+	order, pixCode, qrCodeImg, err := h.Service.ProcessCartPurchase(cookie.Value, name, email, address, paymentMethod, cardNumber, cardCVV, selectedItems)
+
 	if err != nil {
 		http.Error(w, "Erro na compra: "+err.Error(), 500)
 		return
 	}
 
 	data := map[string]any{
-        "Order":       order, // <--- Passamos o objeto Order (com ID)
+		"Order":       order, // <--- Passamos o objeto Order (com ID)
 		"PixCode":     pixCode,
 		"QRCodeImage": qrCodeImg,
 		"IsPix":       paymentMethod == "pix",
@@ -206,15 +206,15 @@ func (h *StoreHandler) PurchaseHandler(w http.ResponseWriter, r *http.Request) {
 
 func (h *StoreHandler) SimulatePaymentHandler(w http.ResponseWriter, r *http.Request) {
 	orderID := chi.URLParam(r, "id")
-    
-    // Chama o serviço para mudar status para PAGO
+
+	// Chama o serviço para mudar status para PAGO
 	err := h.Service.ConfirmPayment(orderID)
 	if err != nil {
 		http.Error(w, "Erro ao simular pagamento: "+err.Error(), 500)
 		return
 	}
 
-    // Redireciona para o dashboard para ver o status atualizado
+	// Redireciona para o dashboard para ver o status atualizado
 	http.Redirect(w, r, "/dashboard?msg=payment_confirmed", http.StatusSeeOther)
 }
 
@@ -234,7 +234,10 @@ func (h *StoreHandler) AdminDashboardHandler(w http.ResponseWriter, r *http.Requ
 }
 
 func (h *StoreHandler) AdminCreateProductHandler(w http.ResponseWriter, r *http.Request) {
-	if !CheckAuth(r) { http.Redirect(w, r, "/login", http.StatusSeeOther); return }
+	if !CheckAuth(r) {
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
+	}
 
 	name := r.FormValue("name")
 	desc := r.FormValue("description")
@@ -259,17 +262,26 @@ func (h *StoreHandler) AdminCreateProductHandler(w http.ResponseWriter, r *http.
 
 func (h *StoreHandler) EditProductFormHandler(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "product_id")
-	if !CheckAuth(r) { http.Redirect(w, r, "/login", http.StatusSeeOther); return }
+	if !CheckAuth(r) {
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
+	}
 
 	product, err := h.Service.GetProductDetails(idStr)
-	if err != nil { http.Redirect(w, r, "/", http.StatusSeeOther); return }
+	if err != nil {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
 
-	data := map[string]any{ "Product": product }
+	data := map[string]any{"Product": product}
 	RenderTemplate(w, r, "edit.html", data)
 }
 
 func (h *StoreHandler) EditProductHandler(w http.ResponseWriter, r *http.Request) {
-	if !CheckAuth(r) { http.Redirect(w, r, "/login", http.StatusSeeOther); return }
+	if !CheckAuth(r) {
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
+	}
 
 	idStr := r.FormValue("id")
 	id, _ := primitive.ObjectIDFromHex(idStr)
@@ -292,6 +304,13 @@ func (h *StoreHandler) EditProductHandler(w http.ResponseWriter, r *http.Request
 	}
 
 	h.Service.EditProduct(id, name, desc, img, priceInt, stock, sizes)
+
+	err := h.Service.EditProduct(id, name, desc, img, priceInt, stock, sizes)
+	if err != nil {
+		// Loga o erro no terminal para você ver o que houve
+		http.Error(w, "Erro ao atualizar produto: "+err.Error(), 500)
+		return
+	}
 
 	http.Redirect(w, r, "/admin/dashboard", http.StatusSeeOther)
 }

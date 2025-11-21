@@ -62,7 +62,8 @@ func (r *StoreRepository) CreateProduct(product models.Product) error {
 // EditProduct
 func (r *StoreRepository) EditProduct(ID primitive.ObjectID, product models.Product) error {
 	coll := r.db.Collection("products")
-	_, err := coll.UpdateByID(context.Background(), ID, product)
+	filter := bson.M{"_id": ID}
+	_, err := coll.ReplaceOne(context.Background(), filter, product)
 	return err
 }
 

@@ -6,38 +6,28 @@
   <form action="/checkout" method="POST" id="cartForm">
     <div class="flex flex-col lg:flex-row gap-8">
       <div class="flex-grow">
-        <div
-          class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden"
-        >
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
           {{ range .Data.Cart }}
-          <div
-            class="p-4 sm:p-6 border-b border-gray-100 last:border-0 flex items-center gap-4 sm:gap-6"
-          >
+          <div class="p-4 sm:p-6 border-b border-gray-100 last:border-0 flex items-center gap-4 sm:gap-6">
+            
             <div class="flex items-center">
               <input
                 type="checkbox"
                 name="selected_items"
                 value="{{.ProductID.Hex}}"
                 checked
-                class="w-5 h-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                class="item-checkbox w-5 h-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                data-price="{{.Price}}" 
+                data-quantity="{{.Quantity}}"
+                onchange="updateTotal()"
               />
             </div>
 
-            <div
-              class="h-20 w-20 flex-shrink-0 bg-gray-100 rounded-lg overflow-hidden border border-gray-200"
-            >
+            <div class="h-20 w-20 flex-shrink-0 bg-gray-100 rounded-lg overflow-hidden border border-gray-200">
               {{ if .ImageURL }}
-              <img
-                src="{{.ImageURL}}"
-                alt="{{.ProductName}}"
-                class="h-full w-full object-cover"
-              />
+              <img src="{{.ImageURL}}" alt="{{.ProductName}}" class="h-full w-full object-cover" />
               {{ else }}
-              <div
-                class="h-full w-full flex items-center justify-center text-gray-400 text-xs"
-              >
-                Sem Foto
-              </div>
+              <div class="h-full w-full flex items-center justify-center text-gray-400 text-xs">Sem Foto</div>
               {{ end }}
             </div>
 
@@ -47,17 +37,11 @@
               {{if .Size}}
               <p class="text-sm text-gray-500">Tamanho: {{.Size}}</p>
               {{end}}
-              <a
-                href="/remove-from-cart?id={{.ProductID.Hex}}&size={{.Size}}"
-                class="text-xs text-red-500 hover:text-red-700 hover:underline mt-1 inline-block"
-                >Remover</a
-              >
+              <a href="/remove-from-cart?id={{.ProductID.Hex}}&size={{.Size}}" class="text-xs text-red-500 hover:text-red-700 hover:underline mt-1 inline-block">Remover</a>
             </div>
 
             <div class="text-right">
-              <span class="block text-lg font-bold text-blue-700"
-                >{{.TotalItem}}</span
-              >
+              <span class="block text-lg font-bold text-blue-700">{{.TotalItem}}</span>
             </div>
           </div>
           {{ end }}
@@ -65,46 +49,56 @@
       </div>
 
       <div class="w-full lg:w-80 flex-shrink-0">
-        <div
-          class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 sticky top-24"
-        >
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 sticky top-24">
           <h2 class="text-lg font-bold text-gray-900 mb-4">Resumo</h2>
 
           <div class="flex justify-between items-center mb-6">
-            <span class="text-lg font-bold text-gray-900">Total (Todos)</span>
-            <span class="text-xl font-bold text-green-600"
-              >R$ {{ printf "%.2f" .Data.Total }}</span
-            >
+            <span class="text-lg font-bold text-gray-900">Total</span>
+            <span id="cart-total" class="text-xl font-bold text-green-600">
+              R$ {{ printf "%.2f" .Data.Total }}
+            </span>
           </div>
 
-          <button
-            type="submit"
-            class="block w-full bg-green-600 hover:bg-green-700 text-white text-center font-bold py-3 rounded-lg transition shadow-sm"
-          >
-            Finalizar Compra (Selecionados)
+          <button type="submit" class="block w-full bg-green-600 hover:bg-green-700 text-white text-center font-bold py-3 rounded-lg transition shadow-sm">
+            Finalizar Compra
           </button>
 
-          <a
-            href="/"
-            class="block w-full text-center text-blue-600 hover:text-blue-800 text-sm font-medium mt-4"
-          >
+          <a href="/" class="block w-full text-center text-blue-600 hover:text-blue-800 text-sm font-medium mt-4">
             Continuar Comprando
           </a>
         </div>
       </div>
     </div>
   </form>
+
+  <script>
+    function updateTotal() {
+      const checkboxes = document.querySelectorAll('.item-checkbox');
+      let totalCents = 0;
+
+      checkboxes.forEach(box => {
+        if (box.checked) {
+          // Recupera preço (em centavos) e quantidade
+          const price = parseInt(box.getAttribute('data-price'));
+          const qtd = parseInt(box.getAttribute('data-quantity'));
+          totalCents += (price * qtd);
+        }
+      });
+
+      // Formata para Real
+      const totalFormatted = (totalCents / 100).toLocaleString('pt-BR', {
+        style: 'currency',
+        currency: 'BRL'
+      });
+
+      document.getElementById('cart-total').innerText = totalFormatted;
+    }
+  </script>
+
   {{ else }}
-  <div
-    class="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center"
-  >
-    <h3 class="text-xl font-bold text-gray-900 mb-2">
-      Seu carrinho está vazio
-    </h3>
-    <a
-      href="/"
-      class="inline-block bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg transition mt-4"
-    >
+  <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
+    <h3 class="text-xl font-bold text-gray-900 mb-2">Seu carrinho está vazio</h3>
+    <a href="/" class="inline-block bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg transition mt-4">
       Ir para a Loja
     </a>
   </div>
