@@ -9,7 +9,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-
 type StoreService struct {
 	Repo    *repository.StoreRepository
 	Payment *PaymentService
@@ -70,7 +69,7 @@ func (s *StoreService) GetProductDetails(idStr string) (*models.Product, error) 
 	return s.Repo.GetProductByID(objID)
 }
 
-	func (s *StoreService) ProcessCartPurchase(userIDStr, customerName, customerEmail, customerAddress, paymentMethod, cardNum, cardCVV string, selectedItems []string) (*models.Order, string, string, error) {
+func (s *StoreService) ProcessCartPurchase(userIDStr, customerName, customerEmail, customerAddress, paymentMethod, cardNum, cardCVV string, selectedItems []string) (*models.Order, string, string, error) {
 	userID, _ := primitive.ObjectIDFromHex(userIDStr)
 
 	// 1. Buscar Carrinho
@@ -201,6 +200,17 @@ func (s *StoreService) RemoveProductFromCart(userIDStr, productIDStr, size strin
 	return s.Repo.RemoveItemFromCart(userID, productID, size)
 }
 
+func (s *StoreService) UpdateCartItemQuantity(userIDStr, productIDStr string, quantity int, size string) error {
+	if quantity <= 0 {
+		return errors.New("quantidade deve ser maior que zero")
+	}
+
+	userID, _ := primitive.ObjectIDFromHex(userIDStr)
+	productID, _ := primitive.ObjectIDFromHex(productIDStr)
+
+	return s.Repo.UpdateCartItemQuantity(userID, productID, quantity, size)
+}
+
 func (s *StoreService) GetUserCart(userIDStr string) (*models.User, float64, error) {
 	userID, _ := primitive.ObjectIDFromHex(userIDStr)
 
@@ -217,6 +227,32 @@ func (s *StoreService) GetUserCart(userIDStr string) (*models.User, float64, err
 
 	// Retorna total formatado (float64 para o template)
 	return user, float64(total) / 100.0, nil
+}
+
+func (s *StoreService) EnrichCartWithStockInfo(cart []models.OrderItem) ([]models.OrderItemWithStock, error) {
+	var enrichedCart []models.OrderItemWithStock
+
+	for _, item := range cart {
+		product, err := s.Repo.GetProductByID(item.ProductID)
+		if err != nil {
+			return nil, err
+		}
+
+		enrichedItem := models.OrderItemWithStock{
+			ProductID:    item.ProductID,
+			ProductName:  item.ProductName,
+			Price:        item.Price,
+			Quantity:     item.Quantity,
+			Size:         item.Size,
+			ImageURL:     item.ImageURL,
+			Stock:        product.Stock,
+			IsOutOfStock: product.Stock == 0,
+		}
+
+		enrichedCart = append(enrichedCart, enrichedItem)
+	}
+
+	return enrichedCart, nil
 }
 
 func (s *StoreService) DeleteProduct(idStr string) error {
