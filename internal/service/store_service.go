@@ -38,15 +38,22 @@ func (s *StoreService) CreateProduct(name, desc, img string, price int64, stock 
 }
 
 func (s *StoreService) EditProduct(ID primitive.ObjectID, name, desc, img string, price int64, stock int, sizes []string) error {
+
+	existingProduct, err := s.Repo.GetProductByID(ID)
+	if err != nil {
+		return err
+	}
+
 	product := models.Product{
-		ID:          primitive.NewObjectID(),
+		ID:          ID,
 		Name:        name,
 		Description: desc,
 		ImageURL:    img,
 		Price:       price,
 		Stock:       stock,
 		Sizes:       sizes,
-		CreatedAt:   time.Now(),
+		CreatedAt:   existingProduct.CreatedAt, // Mantém a data original
+		UpdatedAt:   time.Now(),                // Atualiza a data de modificação
 	}
 	return s.Repo.EditProduct(ID, product)
 }

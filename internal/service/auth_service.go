@@ -34,16 +34,17 @@ func (as *AuthService) RegisterCustomer(name, email, password string) error {
 
 	// 3. Cria o objeto
 	user := models.User{
-		ID:           primitive.NewObjectID(),
-		Name:         name,
-		Email:        email,
-		PasswordHash: string(hashedPass),
-		IsAdmin:      false, // Clientes nunca nascem admin
-		CreatedAt:    time.Now(),
-	}
+        ID:           primitive.NewObjectID(),
+        Name:         name,
+        Email:        email,
+        PasswordHash: string(hashedPass),
+        IsAdmin:      false,
+        CreatedAt:    time.Now(),
+        Cart:         []models.OrderItem{}, // <--- ADICIONE ISSO AQUI (Inicializa lista vazia)
+    }
 
-	// 4. Salva
-	return as.Repo.CreateUser(user)
+    // 4. Salva
+    return as.Repo.CreateUser(user)
 }
 
 // Autentica o usuário (Login)

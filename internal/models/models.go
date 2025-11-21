@@ -13,9 +13,8 @@ type User struct {
 	Email        string             `bson:"email"`
 	PasswordHash string             `bson:"password_hash"`
 	IsAdmin      bool               `bson:"is_admin"`
-	CreatedAt    time.Time          `bson:"created_at"`
-
-	Cart         []OrderItem        `bson:"cart"`
+	CreatedAt    time.Time          `bson:"created_at"`	
+	Cart 		[]OrderItem 		`bson:"cart,omitempty"`
 }
 
 type Product struct {
@@ -35,6 +34,10 @@ type Product struct {
 
 func (p Product) FormattedPrice() string {
 	return fmt.Sprintf("R$ %.2f", float64(p.Price)/100)
+}
+
+func (p Product) PriceToFloat() float64 {
+	return float64(p.Price) / 100.0
 }
 
 type OrderItem struct {
