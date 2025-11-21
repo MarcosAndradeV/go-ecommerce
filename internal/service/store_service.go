@@ -229,6 +229,32 @@ func (s *StoreService) GetUserCart(userIDStr string) (*models.User, float64, err
 	return user, float64(total) / 100.0, nil
 }
 
+func (s *StoreService) EnrichCartWithStockInfo(cart []models.OrderItem) ([]models.OrderItemWithStock, error) {
+	var enrichedCart []models.OrderItemWithStock
+
+	for _, item := range cart {
+		product, err := s.Repo.GetProductByID(item.ProductID)
+		if err != nil {
+			return nil, err
+		}
+
+		enrichedItem := models.OrderItemWithStock{
+			ProductID:    item.ProductID,
+			ProductName:  item.ProductName,
+			Price:        item.Price,
+			Quantity:     item.Quantity,
+			Size:         item.Size,
+			ImageURL:     item.ImageURL,
+			Stock:        product.Stock,
+			IsOutOfStock: product.Stock == 0,
+		}
+
+		enrichedCart = append(enrichedCart, enrichedItem)
+	}
+
+	return enrichedCart, nil
+}
+
 func (s *StoreService) DeleteProduct(idStr string) error {
 	objID, err := primitive.ObjectIDFromHex(idStr)
 	if err != nil {

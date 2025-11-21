@@ -13,8 +13,8 @@ type User struct {
 	Email        string             `bson:"email"`
 	PasswordHash string             `bson:"password_hash"`
 	IsAdmin      bool               `bson:"is_admin"`
-	CreatedAt    time.Time          `bson:"created_at"`	
-	Cart 		[]OrderItem 		`bson:"cart,omitempty"`
+	CreatedAt    time.Time          `bson:"created_at"`
+	Cart         []OrderItem        `bson:"cart,omitempty"`
 }
 
 type Product struct {
@@ -25,7 +25,7 @@ type Product struct {
 
 	Price int64 `bson:"price"`
 
-	Stock int `bson:"stock"`
+	Stock int      `bson:"stock"`
 	Sizes []string `bson:"sizes"` // <--- Generic Size/Attribute
 
 	CreatedAt time.Time `bson:"created_at"`
@@ -44,13 +44,30 @@ type OrderItem struct {
 	ProductID   primitive.ObjectID `bson:"product_id"`
 	ProductName string             `bson:"product_name"`
 
-	Price int64 										`bson:"price"`
-	Quantity int 										`bson:"quantity"`
-	Size     string             `bson:"size"` // <--- Selected Size
-	ImageURL    string             	`bson:"image_url"`
+	Price    int64  `bson:"price"`
+	Quantity int    `bson:"quantity"`
+	Size     string `bson:"size"` // <--- Selected Size
+	ImageURL string `bson:"image_url"`
+}
+
+type OrderItemWithStock struct {
+	ProductID   primitive.ObjectID `bson:"product_id"`
+	ProductName string             `bson:"product_name"`
+
+	Price        int64  `bson:"price"`
+	Quantity     int    `bson:"quantity"`
+	Size         string `bson:"size"` // <--- Selected Size
+	ImageURL     string `bson:"image_url"`
+	Stock        int    `bson:"-"` // Stock disponível no banco
+	IsOutOfStock bool   `bson:"-"` // Se está fora de estoque
 }
 
 func (i OrderItem) TotalItem() string {
+	total := i.Price * int64(i.Quantity)
+	return fmt.Sprintf("R$ %.2f", float64(total)/100)
+}
+
+func (i OrderItemWithStock) TotalItem() string {
 	total := i.Price * int64(i.Quantity)
 	return fmt.Sprintf("R$ %.2f", float64(total)/100)
 }

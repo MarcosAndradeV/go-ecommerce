@@ -89,7 +89,7 @@ func (h *StoreHandler) RemoveFromCartHandler(w http.ResponseWriter, r *http.Requ
 func (h *StoreHandler) UpdateCartHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]bool{"success": false})
+		json.NewEncoder(w).Encode(map[string]any{"success": false})
 		return
 	}
 
@@ -102,22 +102,54 @@ func (h *StoreHandler) UpdateCartHandler(w http.ResponseWriter, r *http.Request)
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(map[string]bool{"success": false})
+		json.NewEncoder(w).Encode(map[string]any{"success": false})
 		return
 	}
 
 	cookie, _ := r.Cookie("sessao_loja")
 
-	err := h.Service.UpdateCartItemQuantity(cookie.Value, req.ProductID, req.Quantity, req.Size)
+	// Verificar estoque disponível
+	product, err := h.Service.GetProductDetails(req.ProductID)
 	if err != nil {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(map[string]bool{"success": false})
+		json.NewEncoder(w).Encode(map[string]any{"success": false, "error": "Produto não encontrado"})
+		return
+	}
+
+	// Se a quantidade solicitada é maior que o estoque, limitar ao estoque disponível
+	if req.Quantity > product.Stock {
+		req.Quantity = product.Stock
+	}
+
+	// Se o estoque é zero, retornar erro
+	if product.Stock == 0 {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]any{
+			"success":      false,
+			"error":        "Produto fora de estoque",
+			"isOutOfStock": true,
+			"stock":        0,
+		})
+		return
+	}
+
+	err = h.Service.UpdateCartItemQuantity(cookie.Value, req.ProductID, req.Quantity, req.Size)
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]any{"success": false})
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]bool{"success": true})
+	json.NewEncoder(w).Encode(map[string]any{
+		"success":      true,
+		"quantity":     req.Quantity,
+		"stock":        product.Stock,
+		"isOutOfStock": product.Stock == 0,
+	})
 }
 
 func (h *StoreHandler) ViewCartHandler(w http.ResponseWriter, r *http.Request) {
@@ -140,8 +172,15 @@ func (h *StoreHandler) ViewCartHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Enriquecer o carrinho com informações de estoque
+	cartWithStock, err := h.Service.EnrichCartWithStockInfo(user.Cart)
+	if err != nil {
+		http.Error(w, "Erro ao carregar informações de estoque", 500)
+		return
+	}
+
 	data := map[string]any{
-		"Cart":       user.Cart,
+		"Cart":       cartWithStock,
 		"Total":      total,
 		"User":       user,
 		"IsLoggedIn": true,

@@ -19,15 +19,20 @@
                 class="item-checkbox w-5 h-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
                 data-price="{{.Price}}" 
                 data-quantity="{{.Quantity}}"
+                data-stock="{{.Stock}}"
+                {{ if .IsOutOfStock }}disabled{{ end }}
                 onchange="updateTotal()"
               />
             </div>
 
-            <div class="h-20 w-20 flex-shrink-0 bg-gray-100 rounded-lg overflow-hidden border border-gray-200">
+            <div class="h-20 w-20 flex-shrink-0 bg-gray-100 rounded-lg overflow-hidden border border-gray-200 {{ if .IsOutOfStock }}grayscale opacity-50{{ end }}">
               {{ if .ImageURL }}
-              <img src="{{.ImageURL}}" alt="{{.ProductName}}" class="h-full w-full object-cover" />
+              <img src="{{.ImageURL}}" alt="{{.ProductName}}" class="h-full w-full object-cover {{ if .IsOutOfStock }}grayscale{{ end }}" />
               {{ else }}
               <div class="h-full w-full flex items-center justify-center text-gray-400 text-xs">Sem Foto</div>
+              {{ end }}
+              {{ if .IsOutOfStock }}
+              <div class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-40 text-white text-xs font-bold">Fora de Estoque</div>
               {{ end }}
             </div>
 
@@ -35,12 +40,19 @@
               <h3 class="text-lg font-bold text-gray-800">{{.ProductName}}</h3>
               <div class="flex items-center gap-2 mt-2">
                 <span class="text-sm text-gray-500">Quantidade:</span>
-                <div class="flex items-center border border-gray-300 rounded">
-                  <button type="button" class="px-2 py-1 text-gray-600 hover:bg-gray-100 transition" onclick="decreaseQuantity(this)">−</button>
-                  <input type="number" name="quantity" value="{{.Quantity}}" min="1" class="w-12 text-center border-0 border-l border-r border-gray-300 text-sm quantity-input" data-product-id="{{.ProductID.Hex}}" data-size="{{.Size}}" />
-                  <button type="button" class="px-2 py-1 text-gray-600 hover:bg-gray-100 transition" onclick="increaseQuantity(this)">+</button>
+                <div class="flex items-center border border-gray-300 rounded {{ if .IsOutOfStock }}opacity-50{{ end }}">
+                  <button type="button" class="px-2 py-1 text-gray-600 hover:bg-gray-100 transition {{ if .IsOutOfStock }}cursor-not-allowed opacity-50{{ end }}" onclick="decreaseQuantity(this)" {{ if .IsOutOfStock }}disabled{{ end }}>−</button>
+                  <input type="number" name="quantity" value="{{.Quantity}}" min="1" max="{{.Stock}}" class="w-12 text-center border-0 border-l border-r border-gray-300 text-sm quantity-input" data-product-id="{{.ProductID.Hex}}" data-size="{{.Size}}" data-stock="{{.Stock}}" {{ if .IsOutOfStock }}disabled{{ end }} />
+                  <button type="button" class="px-2 py-1 text-gray-600 hover:bg-gray-100 transition {{ if .IsOutOfStock }}cursor-not-allowed opacity-50{{ end }}" onclick="increaseQuantity(this)" {{ if .IsOutOfStock }}disabled{{ end }}>+</button>
                 </div>
               </div>
+              {{ if .IsOutOfStock }}
+              <p class="text-xs text-red-600 font-semibold mt-2">⚠ Produto fora de estoque</p>
+              {{ else if lt .Quantity .Stock }}
+              <p class="text-xs text-green-600 mt-2">✓ {{.Stock}} em estoque</p>
+              {{ else if eq .Quantity .Stock }}
+              <p class="text-xs text-yellow-600 font-semibold mt-2">⚠ Quantidade máxima em estoque</p>
+              {{ end }}
               {{if .Size}}
               <p class="text-sm text-gray-500 mt-2">Tamanho: {{.Size}}</p>
               {{end}}
@@ -85,8 +97,15 @@
   <script>
     function increaseQuantity(button) {
       const input = button.parentElement.querySelector('.quantity-input');
-      input.value = parseInt(input.value) + 1;
-      updateCartItem(input);
+      const maxStock = parseInt(input.getAttribute('data-stock'));
+      const currentValue = parseInt(input.value);
+
+      if (currentValue < maxStock) {
+        input.value = currentValue + 1;
+        updateCartItem(input);
+      } else {
+        showAlert('Quantidade máxima em estoque: ' + maxStock, 'warning');
+      }
     }
 
     function decreaseQuantity(button) {
@@ -100,7 +119,20 @@
     function updateCartItem(input) {
       const productId = input.getAttribute('data-product-id');
       const size = input.getAttribute('data-size');
-      const quantity = input.value;
+      let quantity = parseInt(input.value);
+      const maxStock = parseInt(input.getAttribute('data-stock'));
+
+      // Validar limites
+      if (quantity > maxStock) {
+        quantity = maxStock;
+        input.value = quantity;
+        showAlert('Quantidade ajustada ao estoque disponível: ' + maxStock, 'warning');
+      }
+
+      if (quantity <= 0) {
+        quantity = 1;
+        input.value = 1;
+      }
 
       fetch(`/update-cart`, {
         method: 'POST',
@@ -109,18 +141,38 @@
         },
         body: JSON.stringify({
           product_id: productId,
-          quantity: parseInt(quantity),
+          quantity: quantity,
           size: size
         })
       })
       .then(response => response.json())
       .then(data => {
         if (data.success) {
+          // Atualizar o atributo data-quantity para o checkbox
+          const row = input.closest('.p-4, .p-6');
+          const checkbox = row.querySelector('.item-checkbox');
+          if (checkbox) {
+            checkbox.setAttribute('data-quantity', data.quantity);
+          }
           updateTotal();
+        } else if (data.isOutOfStock) {
+          showAlert('Produto fora de estoque', 'error');
+          input.value = 0;
           location.reload();
+        } else {
+          showAlert('Erro ao atualizar quantidade', 'error');
         }
       })
-      .catch(error => console.error('Erro:', error));
+      .catch(error => {
+        console.error('Erro:', error);
+        showAlert('Erro de conexão', 'error');
+      });
+    }
+
+    function showAlert(message, type) {
+      // Simples alerta visual (você pode melhorar com Toast)
+      const alertClass = type === 'error' ? 'bg-red-100 text-red-800' : type === 'warning' ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800';
+      console.warn(message);
     }
 
     function updateTotal() {
