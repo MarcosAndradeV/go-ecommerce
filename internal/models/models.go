@@ -36,6 +36,10 @@ func (p Product) FormattedPrice() string {
 	return fmt.Sprintf("R$ %.2f", float64(p.Price)/100)
 }
 
+func (p Product) PriceToFloat() float64 {
+	return float64(p.Price) / 100.0
+}
+
 type OrderItem struct {
 	ProductID   primitive.ObjectID `bson:"product_id"`
 	ProductName string             `bson:"product_name"`

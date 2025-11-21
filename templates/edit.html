@@ -32,7 +32,7 @@
             >Preço</label
           >
           <input
-            value="{{.Data.Product.Price}}"
+            value="{{printf "%.2f" .Data.Product.PriceToFloat}}"
             type="text"
             name="price"
             required
@@ -86,9 +86,7 @@
           name="description"
           rows="4"
           class="w-full bg-white border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:border-blue-500 transition"
-        >
-{{.Data.Product.Description}}</textarea
-        >
+        >{{.Data.Product.Description}}</textarea>
       </div>
 
       <div class="pt-4 flex gap-4">
