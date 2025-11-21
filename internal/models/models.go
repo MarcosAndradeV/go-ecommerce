@@ -13,9 +13,8 @@ type User struct {
 	Email        string             `bson:"email"`
 	PasswordHash string             `bson:"password_hash"`
 	IsAdmin      bool               `bson:"is_admin"`
-	CreatedAt    time.Time          `bson:"created_at"`
-
-	Cart         []OrderItem        `bson:"cart"`
+	CreatedAt    time.Time          `bson:"created_at"`	
+	Cart 		[]OrderItem 		`bson:"cart,omitempty"`
 }
 
 type Product struct {
