@@ -31,7 +31,7 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	store := database.NewMongoStore("ecommerce_go")
+	store := database.NewMongoStore(os.Getenv("ecommerce_go"))
 	if err := store.Connect(ctx, mongoURI); err != nil {
 		log.Fatalf("FATAL: Falha ao conectar no MongoDB: %v", err)
 	}
