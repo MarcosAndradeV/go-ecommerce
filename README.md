@@ -76,6 +76,7 @@ O projeto segue um layout padrão de projetos Go para separar responsabilidades:
 │   ├── routes/       # Definição de rotas (usando chi)
 │   └── service/      # Lógica de negócios
 ├── static/           # Arquivos estáticos (CSS, JS, imagens)
+├── templates/        # Templates HTML para renderização dinâmica
 └── go.mod            # Dependências do módulo Go
 ```
 
