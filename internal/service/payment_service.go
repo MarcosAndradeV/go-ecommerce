@@ -2,8 +2,8 @@ package service
 
 import (
 	"encoding/base64"
-	"errors"
-	"strings"
+	// "errors"
+	// "strings"
 
 	"github.com/skip2/go-qrcode"
 )
@@ -16,13 +16,13 @@ func NewPaymentService() *PaymentService {
 
 // ProcessPaymentCard simula cartão
 func (s *PaymentService) ProcessPaymentCard(cardNumber, cardName, cvv string, amount int64) error {
-	cleanNum := strings.ReplaceAll(cardNumber, " ", "")
-	if len(cleanNum) < 16 {
-		return errors.New("número de cartão inválido")
-	}
-	if strings.HasSuffix(cleanNum, "0000") {
-		return errors.New("transação recusada pela operadora (Saldo Insuficiente)")
-	}
+	// cleanNum := strings.ReplaceAll(cardNumber, " ", "")
+	// if len(cleanNum) < 16 {
+	// 	return errors.New("número de cartão inválido")
+	// }
+	// if strings.HasSuffix(cleanNum, "0000") {
+	// 	return errors.New("transação recusada pela operadora (Saldo Insuficiente)")
+	// }
 	return nil
 }
 
